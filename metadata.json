@@ -1,0 +1,7 @@
+{
+  "name": "ScattaTurni",
+  "description": "App web ottimizzata per dispositivi mobili per estrarre orari di lavoro strutturati da foto utilizzando l'IA OCR.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
