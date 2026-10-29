@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
-import { ArrowLeft, Camera, CheckCircle2, FileSpreadsheet, FileText, PenLine } from 'lucide-react';
+import { ArrowLeft, Camera, CheckCircle2, Cloud, FileSpreadsheet, FileText, PenLine } from 'lucide-react';
+import { useAccountsAvailable } from '@/cloud/account';
 import { Button } from '@/components/ui/Button';
 import { Field, Input, NumberInput, Select } from '@/components/ui/Form';
 import { Logo } from '@/components/ShiftChip';
@@ -22,15 +23,17 @@ export function Onboarding() {
   const setPay = useStore((s) => s.setPay);
   const [step, setStep] = useState(0);
   const [how, setHow] = useState<'photo' | 'pdf' | 'excel' | 'manual'>('photo');
+  const accountsAvailable = useAccountsAvailable();
 
-  const finish = (goImport: boolean) => {
+  const finish = (goImport: boolean, account = false) => {
     ensureStarterTypes(profile.locale);
     if (!pay.configured) {
       const eur = profile.country !== 'CH' && profile.country !== 'OTHER';
       setPay({ ...pay, currency: eur ? 'EUR' : 'CHF', rounding: eur ? 0.01 : 0.05 });
     }
     setProfile({ onboarded: true });
-    navigate(goImport ? '/import' : '/', goImport && how !== 'manual' ? { source: how } : undefined);
+    if (account) navigate('/account');
+    else navigate(goImport ? '/import' : '/', goImport && how !== 'manual' ? { source: how } : undefined);
   };
 
   const steps = [
@@ -126,6 +129,16 @@ export function Onboarding() {
       </motion.div>
       <h2 className="mt-6 text-[28px] font-bold tracking-[-0.03em] text-ink">{t.onboarding.ready}</h2>
       <p className="mt-2 max-w-sm text-[15px] leading-relaxed text-muted">{t.onboarding.readyText}</p>
+      {accountsAvailable && (
+        <button onClick={() => finish(false, true)} className="mt-8 flex w-full items-start gap-3 rounded-3xl bg-surface p-4 text-left ring-1 ring-line transition hover:bg-surface-2">
+          <span className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-sky-500/12 text-sky-500"><Cloud className="size-5.5" /></span>
+          <span>
+            <span className="block text-[15px] font-semibold text-ink">{t.onboarding.accountTitle}</span>
+            <span className="mt-0.5 block text-[13.5px] leading-snug text-muted">{t.onboarding.accountText}</span>
+            <span className="mt-2 block text-[13.5px] font-semibold text-brand">{t.onboarding.accountCta} →</span>
+          </span>
+        </button>
+      )}
     </div>,
   ];
 

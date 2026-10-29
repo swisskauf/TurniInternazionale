@@ -1,10 +1,10 @@
 apply plugin: 'com.android.application'
 
 android {
-    namespace = "ch.swissync.turni"
+    namespace = "org.swissync.turni"
     compileSdk = rootProject.ext.compileSdkVersion
     defaultConfig {
-        applicationId "ch.swissync.turni"
+        applicationId "org.swissync.turni"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         // CI passes the build number; local builds default to 1.

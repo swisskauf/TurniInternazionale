@@ -9,6 +9,7 @@ import { ShiftChip } from '@/components/ShiftChip';
 import { useRoute, goBack } from '@/app/router';
 import { AiError } from '@/ai/client';
 import { shiftTypesWithAi, legendToTypes } from '@/ai/tasks';
+import { AiAllowance } from '@/components/AiAllowance';
 import { parseLegendText } from '@/engine/legend';
 import { normalizeCode } from '@/engine/recognition/tokens';
 import { fmtSegments, totalSegmentMinutes } from '@/engine/time';
@@ -181,6 +182,7 @@ export function TypesPage() {
             <Button variant="primary" block loading={busy} disabled={!text.trim()} icon={<Sparkles className="size-4.5" />} onClick={() => fromAi()}>{t.common.continue}</Button>
           </div>
         )}>
+        <AiAllowance className="mb-3" />
         <Textarea value={text} onChange={(e) => { setText(e.target.value); setProposals(null); }} className={cn('min-h-36')} placeholder={t.types.describePlaceholder} />
         {proposalList}
       </Sheet>

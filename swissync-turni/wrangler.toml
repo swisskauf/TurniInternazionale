@@ -1,0 +1,35 @@
+# Swissync Turni on Cloudflare: web app (static assets) + API (Worker) + accounts (D1, EU).
+# Deploy with scripts/deploy-cloudflare.sh (creates the database and secrets the first time).
+name = "swissync-turni"
+main = "worker/index.ts"
+compatibility_date = "2026-10-01"
+workers_dev = true
+routes = [{ pattern = "turni.swissync.org", custom_domain = true }]
+
+[assets]
+directory = "./dist"
+binding = "ASSETS"
+not_found_handling = "single-page-application"
+run_worker_first = ["/api/*"]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "swissync-turni"
+database_id = "00000000-0000-0000-0000-000000000000"
+migrations_dir = "migrations"
+
+[vars]
+PUBLIC_URL = "https://turni.swissync.org"
+MAIL_FROM = "Swissync Turni <no-reply@swissync.org>"
+AI_MONTHLY_LIMIT = "6"
+AI_DAILY_LIMIT = "40"
+XAI_MODEL = "grok-4.7"
+XAI_REASONING = "medium"
+APPLE_TEAM_ID = "R98X48G958"
+APPLE_CLIENT_IDS = "org.swissync.turni"
+# Google sign-in: set GOOGLE_WEB_CLIENT_ID / GOOGLE_IOS_CLIENT_ID / GOOGLE_CLIENT_IDS once the
+# OAuth clients exist (see docs/STORE_RELEASE.md). Secrets (wrangler secret put):
+# TOKEN_SECRET, RESEND_API_KEY, XAI_API_KEY, APPLE_KEY_ID, APPLE_PRIVATE_KEY.
+
+[observability]
+enabled = true

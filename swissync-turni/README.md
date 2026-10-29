@@ -41,8 +41,10 @@ src/engine/            logica pura e testata (nessuna UI)
   recognition/         script di riconoscimento: griglia, griglia trasposta, elenco, codici, periodo
 src/import/readers.ts  foto (OCR locale), PDF (pdf.js), Excel/CSV, testo → token posizionati
 src/ai/                client xAI e trasformazione delle risposte (script, legenda, busta paga)
-server/                endpoint /api/ai: compiti fissi con JSON schema, la chiave resta sul server
-api/ai.ts              funzione Vercel che espone server/ai.ts
+server/                API: xAI (compiti fissi, JSON schema), account (email+codice, Apple, Google),
+                       sincronizzazione e limite xAI mensile, su D1/SQLite
+worker/index.ts        Cloudflare Worker: web app + /api/* (wrangler.toml, migrations/)
+src/cloud/             account, sincronizzazione tra dispositivi (merge con cancellazioni)
 src/report/pdf.ts      rapporto ore PDF (jsPDF)
 src/features/…         schermate: Oggi, Calendario, Importa, Ore, Guadagni, Turni, Script, Impostazioni
 android/, ios/         progetti nativi Capacitor
@@ -53,12 +55,20 @@ android/, ios/         progetti nativi Capacitor
 L'endpoint `/api/ai` accetta solo 4 compiti (`analyze-plan`, `refine-script`, `shift-types`,
 `payslip`) con input limitati e output in JSON schema rigoroso: non è un proxy generico.
 Modello predefinito `grok-4.7` (configurabile con `XAI_MODEL`), limite giornaliero per IP
-(`AI_DAILY_LIMIT`). Gli utenti possono usare la propria chiave xAI (Impostazioni → Assistente
-xAI) senza limiti della piattaforma.
+(`AI_DAILY_LIMIT`) e **6 analisi al mese per account** (`AI_MONTHLY_LIMIT`), contate sul server.
+Gli utenti possono usare la propria chiave xAI (Impostazioni → Assistente xAI) senza limiti
+della piattaforma.
+
+### Account
+
+Facoltativi: l'app funziona del tutto offline. Con un account gratuito (email + codice a 6 cifre,
+Accedi con Apple, Google) i dati si sincronizzano tra dispositivi: ogni turno, tipo, script…
+vince la modifica più recente, le cancellazioni si propagano. In sviluppo `npm run dev` usa un
+database SQLite locale (`.dev/`) e mostra i codici email a schermo.
 
 ## Produzione e store
 
-Vedi **[docs/STORE_RELEASE.md](docs/STORE_RELEASE.md)**: Vercel (web + API), App Store,
+Vedi **[docs/STORE_RELEASE.md](docs/STORE_RELEASE.md)**: Cloudflare (web + API + account), App Store,
 Google Play, Microsoft Store (PWA). I workflow GitHub Actions sono in
 `.github/workflows/swissync-turni-*.yml`.
 

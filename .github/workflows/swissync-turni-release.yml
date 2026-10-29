@@ -11,7 +11,7 @@ on:
         type: choice
         options: [internal, alpha, beta, production]
       web:
-        description: 'Deploy web app to Vercel (production)'
+        description: 'Deploy web app + API to Cloudflare (turni.swissync.org)'
         default: true
         type: boolean
 
@@ -21,26 +21,26 @@ defaults:
 
 jobs:
   web:
-    name: Web · Vercel production
+    name: Web + API · Cloudflare
     if: ${{ inputs.web }}
     runs-on: ubuntu-latest
     env:
-      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Deploy
-        if: ${{ env.VERCEL_TOKEN != '' }}
-        # Run from the repo root: the Vercel project's Root Directory is `swissync-turni`.
-        working-directory: .
+          cache: npm
+          cache-dependency-path: swissync-turni/package-lock.json
+      - name: Build
+        run: npm ci && npm test && npm run build
+      - name: Migrate database and deploy
+        if: ${{ env.CLOUDFLARE_API_TOKEN != '' }}
         run: |
-          npx vercel@latest pull --yes --environment=production --token "$VERCEL_TOKEN"
-          npx vercel@latest build --prod --token "$VERCEL_TOKEN"
-          npx vercel@latest deploy --prebuilt --prod --token "$VERCEL_TOKEN"
+          npx --yes wrangler@4.150.0 d1 migrations apply swissync-turni --remote
+          npx --yes wrangler@4.150.0 deploy
 
   android:
     name: Android · Google Play
@@ -85,7 +85,7 @@ jobs:
         uses: r0adkll/upload-google-play@v1
         with:
           serviceAccountJsonPlainText: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
-          packageName: ch.swissync.turni
+          packageName: org.swissync.turni
           releaseFiles: swissync-turni/android/app/build/outputs/bundle/release/app-release.aab
           track: ${{ inputs.android_track }}
           status: ${{ inputs.android_track == 'production' && 'completed' || 'draft' }}

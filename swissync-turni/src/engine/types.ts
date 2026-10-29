@@ -91,6 +91,8 @@ export interface Profile {
   clockEnabled: boolean;
   reminders: { enabled: boolean; minutesBefore: number };
   onboarded: boolean;
+  /** Last change (for syncing between devices). */
+  updatedAt?: number;
 }
 
 // ---------------------------------------------------------------------------

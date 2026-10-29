@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Supporto · Swissync Turni</title>
+<style>
+  :root { --ink:#0d1321; --muted:#667085; --bg:#f3f4f7; --card:#fff; --brand:#e5223f; --line:rgba(15,23,42,.08); }
+  @media (prefers-color-scheme: dark) { :root { --ink:#eef1f6; --muted:#8a94a6; --bg:#080b11; --card:#10151f; --line:rgba(255,255,255,.08); } }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:16px/1.6 -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", sans-serif; }
+  main { max-width: 760px; margin: 0 auto; padding: 40px 18px 64px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:20px; padding:28px; margin-top:18px; }
+  h1 { font-size: 30px; letter-spacing:-.02em; margin: 0; }
+  h2 { font-size: 19px; margin: 26px 0 6px; }
+  p, li { color: var(--ink); }
+  .muted { color: var(--muted); }
+  .brand { display:flex; align-items:center; gap:12px; }
+  .logo { width:40px; height:40px; border-radius:11px; background:linear-gradient(135deg,#ff5a68,#d81b3c); position:relative; }
+  .logo:before, .logo:after { content:""; position:absolute; background:#fff; border-radius:2px; left:50%; top:50%; transform:translate(-50%,-50%); }
+  .logo:before { width:7px; height:20px; } .logo:after { width:20px; height:7px; }
+  nav a, a { color: var(--brand); font-weight:600; text-decoration:none; }
+  nav a { margin-right:14px; }
+  table { border-collapse: collapse; width:100%; font-size:15px; } td, th { text-align:left; padding:8px 6px; border-bottom:1px solid var(--line); vertical-align:top; }
+  .foot { margin-top:28px; font-size:13.5px; }
+</style>
+</head>
+<body>
+<main>
+  <div class="brand"><div class="logo" aria-hidden="true"></div><div><h1>Swissync Turni</h1><div class="muted">Supporto · Support · Assistance</div></div></div>
+  <nav style="margin-top:16px"><a href="#it">Italiano</a><a href="#en">English</a><a href="#de">Deutsch</a><a href="#fr">Français</a></nav>
+  <section class="card" id="it">
+    <h2>Supporto</h2>
+    <p>Scrivici a <a href="mailto:support@swissync.org">support@swissync.org</a> o su <a href="https://wa.me/41762272282">WhatsApp</a>: risponde una persona che conosce l’app.</p>
+    <h2>Domande frequenti</h2>
+    <p><strong>Il piano non viene riconosciuto.</strong> Fotografalo dall’alto, con buona luce e tutta la tabella nell’inquadratura, e controlla che il tuo nome sia scritto come nel piano (Importa → Il tuo nome nel piano). Puoi anche creare uno script una volta con xAI: dalle importazioni successive il piano viene letto sul dispositivo, gratis.</p>
+    <p><strong>Un codice del piano è sconosciuto.</strong> Nella revisione l’app propone i turni letti dalla legenda del piano; altrimenti tocca il codice e definisci orari e pause.</p>
+    <p><strong>Quante analisi xAI posso usare?</strong> Con un account gratuito, 6 al mese. Il riconoscimento locale con gli script è illimitato.</p>
+    <p><strong>Come elimino l’account?</strong> Vedi <a href="delete-account.html">Elimina account</a>.</p>
+  </section>
+  <section class="card" id="en">
+    <h2>Support</h2>
+    <p>Email <a href="mailto:support@swissync.org">support@swissync.org</a> or <a href="https://wa.me/41762272282">WhatsApp</a>. Free accounts include 6 xAI analyses a month; local recognition with scripts is unlimited. To delete your account see <a href="delete-account.html">Delete account</a>.</p>
+  </section>
+  <section class="card" id="de">
+    <h2>Support</h2>
+    <p>E-Mail an <a href="mailto:support@swissync.org">support@swissync.org</a> oder <a href="https://wa.me/41762272282">WhatsApp</a>. Kostenlose Konten enthalten 6 xAI-Analysen pro Monat; die lokale Erkennung mit Skripten ist unbegrenzt.</p>
+  </section>
+  <section class="card" id="fr">
+    <h2>Assistance</h2>
+    <p>E-mail à <a href="mailto:support@swissync.org">support@swissync.org</a> ou <a href="https://wa.me/41762272282">WhatsApp</a>. Les comptes gratuits incluent 6 analyses xAI par mois ; la reconnaissance locale avec les scripts est illimitée.</p>
+  </section>
+
+  <p class="muted foot">Swissync Turni · Swisskauf Sagl · Via San Gottardo 47, 6500 Bellinzona, Svizzera / Switzerland · UID CHE-444.793.939 · <a href="mailto:support@swissync.org">support@swissync.org</a> · <a href="privacy.html">Privacy</a> · <a href="support.html">Supporto / Support</a> · <a href="delete-account.html">Elimina account / Delete account</a></p>
+</main>
+</body>
+</html>

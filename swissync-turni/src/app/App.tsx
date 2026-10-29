@@ -6,6 +6,7 @@ import { DayEditorHost } from '@/features/day/DayEditor';
 import { TodayPage } from '@/features/today/TodayPage';
 import { Onboarding } from '@/features/onboarding/Onboarding';
 import { useStore } from '@/store/store';
+import { initAccount } from '@/cloud/account';
 import { Layout } from './Layout';
 import { useRoute } from './router';
 import { useThemeEffect } from './hooks';
@@ -18,6 +19,7 @@ const PaySetupPage = lazy(() => import('@/features/earnings/PaySetupPage').then(
 const TypesPage = lazy(() => import('@/features/types/TypesPage').then((m) => ({ default: m.TypesPage })));
 const ScriptsPage = lazy(() => import('@/features/scripts/ScriptsPage').then((m) => ({ default: m.ScriptsPage })));
 const SettingsPage = lazy(() => import('@/features/settings/SettingsPage').then((m) => ({ default: m.SettingsPage })));
+const AccountPage = lazy(() => import('@/features/account/AccountPage').then((m) => ({ default: m.AccountPage })));
 
 function Page() {
   const { path } = useRoute();
@@ -38,6 +40,8 @@ function Page() {
       return <ScriptsPage />;
     case '/settings':
       return <SettingsPage />;
+    case '/account':
+      return <AccountPage />;
     default:
       return <TodayPage />;
   }
@@ -72,6 +76,11 @@ export function App() {
     const id = setTimeout(() => import('@/lib/reminders').then((m) => m.syncReminders()), 1500);
     return () => clearTimeout(id);
   }, [hydrated, entries, reminders]);
+
+  // Account session (also completes email links and web sign-in redirects).
+  useEffect(() => {
+    if (hydrated) void initAccount();
+  }, [hydrated]);
 
   // `?demo=it` loads sample data (store screenshots, presentations).
   useEffect(() => {

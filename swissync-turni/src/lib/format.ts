@@ -1,4 +1,4 @@
-import { format as dfFormat } from 'date-fns';
+import { format as dfFormat, formatDistanceToNow } from 'date-fns';
 import { de, enGB, fr, it } from 'date-fns/locale';
 import { useMemo } from 'react';
 import { fromISO } from '@/engine/dates';
@@ -71,6 +71,8 @@ export function useFmt() {
       number: (v: number, digits = 2) => formatNumber(v, locale, country, digits),
       date: (iso: ISODate, pattern = 'd MMM yyyy') => formatDate(iso, pattern, locale),
       dateCap: (iso: ISODate, pattern: string) => capitalize(formatDate(iso, pattern, locale)),
+      /** "2 minutes ago" */
+      ago: (time: number) => formatDistanceToNow(time, { addSuffix: true, locale: dateLocale(locale) }),
     }),
     [locale, country, hoursFormat, currency],
   );

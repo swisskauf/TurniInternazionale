@@ -4,6 +4,7 @@ import { del, get, set } from 'idb-keyval';
 import { uid } from '@/lib/id';
 import { emptyPayProfile, starterTypes } from '@/engine/presets';
 import { normalizeCode } from '@/engine/recognition/tokens';
+import type { SyncData } from '@/cloud/merge';
 import type {
   AiSettings, ImportLog, ISODate, PayProfile, PayslipRecord, Profile, RecognitionScript, ShiftEntry, ShiftType, Locale,
 } from '@/engine/types';
@@ -107,6 +108,10 @@ export interface AppState {
   imports: ImportLog[];
   ai: AiSettings;
   undo: UndoSnapshot[];
+  /** Deleted items ("entry:2026-10-05" → time), so other devices delete them too. */
+  tombstones: Record<string, number>;
+  /** Which account this device's data belongs to, and the account copy it last saw. */
+  cloud: { userId: string | null; version: number; lastSyncAt: number };
 
   setProfile: (p: Partial<Profile>) => void;
   upsertType: (t: ShiftType) => void;
@@ -126,6 +131,9 @@ export interface AppState {
   undoLast: () => string | null;
   replaceAll: (data: BackupData) => void;
   resetAll: () => void;
+  /** Takes the merged copy from the account (sync). */
+  applySync: (data: SyncData) => void;
+  setCloud: (c: Partial<AppState['cloud']>) => void;
 }
 
 export type BackupData = Pick<AppState, 'profile' | 'types' | 'entries' | 'scripts' | 'pay' | 'payslips' | 'imports' | 'ai'>;
@@ -145,6 +153,16 @@ function linkEntriesToType(entries: Record<ISODate, ShiftEntry>, t: ShiftType): 
 
 const sameSegments = (a?: ShiftEntry['segments'], b?: ShiftEntry['segments']) => JSON.stringify(a ?? []) === JSON.stringify(b ?? []);
 
+const defaultCloud = (): AppState['cloud'] => ({ userId: null, version: 0, lastSyncAt: 0 });
+
+/** Marks removed keys as deleted, for sync. */
+function buried(tombs: Record<string, number>, kind: string, keys: string[], now = Date.now()): Record<string, number> {
+  if (!keys.length) return tombs;
+  const next = { ...tombs };
+  for (const k of keys) next[`${kind}:${k}`] = now;
+  return next;
+}
+
 export const useStore = create<AppState>()(
   persist(
     (setState, getState) => ({
@@ -158,8 +176,10 @@ export const useStore = create<AppState>()(
       imports: [],
       ai: defaultAi(),
       undo: [],
+      tombstones: {},
+      cloud: defaultCloud(),
 
-      setProfile: (p) => setState((s) => ({ profile: { ...s.profile, ...p } })),
+      setProfile: (p) => setState((s) => ({ profile: { ...s.profile, ...p, updatedAt: Date.now() } })),
 
       upsertType: (t) =>
         setState((s) => {
@@ -174,7 +194,7 @@ export const useStore = create<AppState>()(
           const types = { ...s.types };
           if (used) types[id] = { ...types[id], archived: true, updatedAt: Date.now() };
           else delete types[id];
-          return { types };
+          return { types, tombstones: used ? s.tombstones : buried(s.tombstones, 'type', [id]) };
         }),
 
       setEntry: (date, entry) =>
@@ -182,7 +202,7 @@ export const useStore = create<AppState>()(
           const entries = { ...s.entries };
           if (entry) entries[date] = { ...entry, updatedAt: Date.now() };
           else delete entries[date];
-          return { entries };
+          return { entries, tombstones: entry || !s.entries[date] ? s.tombstones : buried(s.tombstones, 'entry', [date]) };
         }),
 
       setEntries: (map, undoLabel) => {
@@ -190,11 +210,15 @@ export const useStore = create<AppState>()(
         setState((s) => {
           const entries = { ...s.entries };
           const now = Date.now();
+          const removed: string[] = [];
           for (const [d, e] of Object.entries(map)) {
             if (e) entries[d] = { ...e, updatedAt: now };
-            else delete entries[d];
+            else if (entries[d]) {
+              delete entries[d];
+              removed.push(d);
+            }
           }
-          return { entries };
+          return { entries, tombstones: buried(s.tombstones, 'entry', removed, now) };
         });
       },
 
@@ -241,7 +265,7 @@ export const useStore = create<AppState>()(
         setState((s) => {
           const scripts = { ...s.scripts };
           delete scripts[id];
-          return { scripts };
+          return { scripts, tombstones: buried(s.tombstones, 'script', [id]) };
         }),
       recordScriptRun: (id, days, accuracy) =>
         setState((s) => {
@@ -256,8 +280,12 @@ export const useStore = create<AppState>()(
         }),
 
       setPay: (p) => setState({ pay: { ...p, updatedAt: Date.now() } }),
-      addPayslip: (p) => setState((s) => ({ payslips: [p, ...s.payslips.filter((x) => x.period !== p.period)].slice(0, 36) })),
-      removePayslip: (id) => setState((s) => ({ payslips: s.payslips.filter((p) => p.id !== id) })),
+      addPayslip: (p) =>
+        setState((s) => ({
+          payslips: [p, ...s.payslips.filter((x) => x.period !== p.period)].slice(0, 36),
+          tombstones: buried(s.tombstones, 'payslip', s.payslips.filter((x) => x.period === p.period && x.id !== p.id).map((x) => x.id)),
+        })),
+      removePayslip: (id) => setState((s) => ({ payslips: s.payslips.filter((p) => p.id !== id), tombstones: buried(s.tombstones, 'payslip', [id]) })),
 
       setAi: (p) => setState((s) => ({ ai: { ...s.ai, ...p } })),
       bumpAi: (k) => setState((s) => ({ ai: { ...s.ai, usage: { ...s.ai.usage, [k]: (s.ai.usage[k] as number) + 1, lastAt: k === 'requests' ? Date.now() : s.ai.usage.lastAt } } })),
@@ -267,22 +295,38 @@ export const useStore = create<AppState>()(
         const s = getState();
         const last = s.undo[s.undo.length - 1];
         if (!last) return null;
-        setState({ entries: last.entries, undo: s.undo.slice(0, -1) });
+        // The restored days count as new changes, and the undone ones as deletions (sync).
+        const now = Date.now();
+        const entries: Record<ISODate, ShiftEntry> = {};
+        for (const [d, e] of Object.entries(last.entries)) entries[d] = s.entries[d] === e ? e : { ...e, updatedAt: now };
+        const removed = Object.keys(s.entries).filter((d) => !last.entries[d]);
+        setState({ entries, undo: s.undo.slice(0, -1), tombstones: buried(s.tombstones, 'entry', removed, now) });
         return last.label;
       },
 
-      replaceAll: (data) =>
+      replaceAll: (data) => {
+        // A restored backup replaces the data everywhere: newer than any copy, and what it
+        // doesn't contain is deleted on the other devices too.
+        const s = getState();
+        const now = Date.now();
+        const fresh = <T extends object>(map: Record<string, T> = {}) => Object.fromEntries(Object.entries(map).map(([k, v]) => [k, { ...v, updatedAt: now }])) as Record<string, T>;
+        let tombstones = s.tombstones;
+        tombstones = buried(tombstones, 'entry', Object.keys(s.entries).filter((k) => !data.entries?.[k]), now);
+        tombstones = buried(tombstones, 'type', Object.keys(s.types).filter((k) => !data.types?.[k]), now);
+        tombstones = buried(tombstones, 'script', Object.keys(s.scripts).filter((k) => !data.scripts?.[k]), now);
         setState({
-          profile: { ...defaultProfile(), ...data.profile },
-          types: data.types ?? {},
-          entries: data.entries ?? {},
-          scripts: data.scripts ?? {},
-          pay: { ...emptyPayProfile(), ...data.pay },
+          profile: { ...defaultProfile(), ...data.profile, updatedAt: now },
+          types: fresh(data.types),
+          entries: fresh(data.entries),
+          scripts: fresh(data.scripts),
+          pay: { ...emptyPayProfile(), ...data.pay, updatedAt: now },
           payslips: data.payslips ?? [],
           imports: data.imports ?? [],
-          ai: { ...defaultAi(), ...data.ai },
+          ai: { ...defaultAi(), ...data.ai, apiKey: data.ai?.apiKey ?? s.ai.apiKey },
           undo: [],
-        }),
+          tombstones,
+        });
+      },
 
       resetAll: () =>
         setState({
@@ -295,7 +339,23 @@ export const useStore = create<AppState>()(
           imports: [],
           ai: defaultAi(),
           undo: [],
+          tombstones: {},
+          cloud: defaultCloud(),
         }),
+
+      applySync: (d) =>
+        setState((s) => ({
+          profile: { ...s.profile, ...d.profile, onboarded: s.profile.onboarded || !!d.profile?.onboarded },
+          types: d.types,
+          entries: d.entries,
+          scripts: d.scripts,
+          pay: { ...emptyPayProfile(), ...d.pay },
+          payslips: d.payslips,
+          imports: d.imports,
+          tombstones: d.tombstones,
+        })),
+
+      setCloud: (c) => setState((s) => ({ cloud: { ...s.cloud, ...c } })),
     }),
     {
       name: 'swissync-turni',
@@ -310,6 +370,8 @@ export const useStore = create<AppState>()(
         payslips: s.payslips,
         imports: s.imports,
         ai: s.ai,
+        tombstones: s.tombstones,
+        cloud: s.cloud,
       }),
       merge: (persisted, current) => {
         const p = (persisted ?? {}) as Partial<AppState>;

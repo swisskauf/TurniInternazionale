@@ -26,10 +26,10 @@
     "web": true,
     "pwa": true,
     "ios": {
-      "bundleId": "ch.swissync.turni"
+      "bundleId": "org.swissync.turni"
     },
     "android": {
-      "packageName": "ch.swissync.turni"
+      "packageName": "org.swissync.turni"
     }
   },
   "api": {

@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
-import { CalendarDays, Clock3, House, Layers, ScanLine, Settings, Wallet, Wand2 } from 'lucide-react';
+import { CalendarDays, Clock3, House, Layers, ScanLine, Settings, UserRound, Wallet, Wand2 } from 'lucide-react';
+import { useAccountsAvailable } from '@/cloud/account';
 import { cn } from '@/lib/cn';
 import { Logo } from '@/components/ShiftChip';
 import { useT } from '@/i18n';
@@ -14,6 +15,7 @@ interface NavItem {
 export function Layout({ children }: { children: ReactNode }) {
   const t = useT();
   const { path } = useRoute();
+  const accountsAvailable = useAccountsAvailable();
   const main: NavItem[] = [
     { path: '/', label: t.nav.today, icon: <House className="size-[22px]" /> },
     { path: '/calendar', label: t.nav.calendar, icon: <CalendarDays className="size-[22px]" /> },
@@ -24,6 +26,7 @@ export function Layout({ children }: { children: ReactNode }) {
   const secondary: NavItem[] = [
     { path: '/types', label: t.nav.types, icon: <Layers className="size-5" /> },
     { path: '/scripts', label: t.nav.scripts, icon: <Wand2 className="size-5" /> },
+    ...(accountsAvailable ? [{ path: '/account' as RoutePath, label: t.nav.account, icon: <UserRound className="size-5" /> }] : []),
     { path: '/settings', label: t.nav.settings, icon: <Settings className="size-5" /> },
   ];
   const active = (p: RoutePath) => path === p || (p === '/earnings' && path === '/pay-setup');

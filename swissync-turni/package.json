@@ -2,7 +2,7 @@
   "name": "swissync-turni",
   "private": true,
   "version": "1.0.0",
-  "description": "Swissync Turni \u2013 traccia ore lavorative e guadagni dai turni del tuo piano.",
+  "description": "Swissync Turni – traccia ore lavorative e guadagni dai turni del tuo piano.",
   "type": "module",
   "scripts": {
     "predev": "node scripts/copy-ocr-assets.mjs",
@@ -31,6 +31,7 @@
     "@capacitor/share": "^8.0.3",
     "@capacitor/splash-screen": "^8.0.2",
     "@capacitor/status-bar": "^8.0.4",
+    "@capgo/capacitor-social-login": "8.5.17",
     "@fontsource-variable/inter": "^5.3.0",
     "date-fns": "^4.4.0",
     "idb-keyval": "^6.3.0",

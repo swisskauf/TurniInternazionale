@@ -1,7 +1,7 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'ch.swissync.turni',
+  appId: 'org.swissync.turni',
   appName: 'Swissync Turni',
   webDir: 'dist',
   backgroundColor: '#f3f4f7',

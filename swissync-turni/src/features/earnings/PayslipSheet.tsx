@@ -3,6 +3,7 @@ import { FileUp, ShieldCheck, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Sheet } from '@/components/ui/Sheet';
 import { Badge, Spinner, toast } from '@/components/ui/Feedback';
+import { AiAllowance } from '@/components/AiAllowance';
 import { AiError } from '@/ai/client';
 import { payslipRecord, payslipToProfile, readPayslipWithAi, type PayslipOutput } from '@/ai/tasks';
 import { readPdf } from '@/import/readers';
@@ -91,6 +92,7 @@ export function PayslipSheet({ open, onClose, mode }: { open: boolean; onClose: 
         )
       }
     >
+      {!result && !busy && <AiAllowance className="mb-3" />}
       {!result && !busy && (
         <div className="flex items-start gap-3 rounded-2xl bg-surface-2 p-4 text-[13.5px] leading-relaxed text-muted ring-1 ring-line">
           <ShieldCheck className="mt-0.5 size-5 shrink-0 text-success" />

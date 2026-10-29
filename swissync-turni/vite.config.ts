@@ -4,17 +4,29 @@ import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import { VitePWA } from 'vite-plugin-pwa';
 import path from 'node:path';
-import { handleAi } from './server/ai';
+import { handleApi } from './server/api';
+import type { ServerEnv } from './server/env';
 
 /**
- * Serves the same `/api/ai` endpoint that runs on Vercel while developing
- * locally, so `npm run dev` works end-to-end with a key in `.env.local`.
+ * Serves the same `/api/*` the Cloudflare Worker serves, while developing locally: xAI with a
+ * key in `.env.local`, and accounts on a local SQLite copy of the D1 database (e-mail codes are
+ * returned in the responses instead of being sent).
  */
-function devAiApi(env: Record<string, string>): Plugin {
+function devApi(env: Record<string, string>): Plugin {
   return {
-    name: 'swissync-dev-ai-api',
-    configureServer(server) {
-      server.middlewares.use('/api/ai', async (req, res) => {
+    name: 'swissync-dev-api',
+    async configureServer(server) {
+      const { mkdirSync } = await import('node:fs');
+      const { sqliteDb } = await import('./server/sqlite');
+      mkdirSync('.dev', { recursive: true });
+      const serverEnv: ServerEnv = {
+        TOKEN_SECRET: 'dev-only-secret',
+        AUTH_DEBUG_CODES: '1',
+        ...process.env,
+        ...env,
+        DB: sqliteDb('.dev/turni.sqlite', 'migrations'),
+      };
+      server.middlewares.use('/api', async (req, res) => {
         const chunks: Buffer[] = [];
         for await (const chunk of req) chunks.push(chunk as Buffer);
         const body = Buffer.concat(chunks);
@@ -22,14 +34,14 @@ function devAiApi(env: Record<string, string>): Plugin {
         for (const [k, v] of Object.entries(req.headers)) {
           if (typeof v === 'string') headers.set(k, v);
         }
-        const request = new Request(`http://localhost${req.url ?? ''}`, {
+        const request = new Request(`http://localhost/api${req.url ?? ''}`, {
           method: req.method,
           headers,
           body: req.method === 'GET' || req.method === 'HEAD' ? undefined : body,
         });
-        const response = await handleAi(request, { ...process.env, ...env });
+        const response = await handleApi(request, serverEnv);
         res.statusCode = response.status;
-        response.headers.forEach((value, key) => res.setHeader(key, value));
+        response.headers.forEach((value: string, key: string) => res.setHeader(key, value));
         res.end(Buffer.from(await response.arrayBuffer()));
       });
     },
@@ -42,10 +54,10 @@ export default defineConfig(({ mode }) => {
     plugins: [
       react(),
       tailwindcss(),
-      devAiApi(env),
+      devApi(env),
       VitePWA({
         registerType: 'autoUpdate',
-        includeAssets: ['icons/*.png', 'icons/*.svg', 'privacy.html', 'swissync-app.json'],
+        includeAssets: ['icons/*.png', 'icons/*.svg', 'privacy.html', 'support.html', 'delete-account.html', 'swissync-app.json'],
         manifest: {
           id: '/',
           name: 'Swissync Turni',

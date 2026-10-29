@@ -1,6 +1,7 @@
-import { Capacitor } from '@capacitor/core';
 import { SCHEMAS, systemPrompt, userContent, type AiInput, type AiTask } from '../../server/prompts';
 import { useStore } from '@/store/store';
+import { apiEndpoint } from '@/lib/api';
+import { accessToken, refreshQuota, useAccount } from '@/cloud/account';
 
 export class AiError extends Error {
   constructor(public code: string, public detail?: string) {
@@ -8,23 +9,17 @@ export class AiError extends Error {
   }
 }
 
-const API_BASE = (import.meta.env.VITE_API_BASE as string | undefined)?.replace(/\/$/, '') ?? '';
+export { apiEndpoint };
+export const apiUrl = () => apiEndpoint('ai');
 
-/** Where the AI endpoint lives: same origin on the web, the production URL in native apps. */
-export function apiUrl(): string | null {
-  if (API_BASE) return `${API_BASE}/api/ai`;
-  if (Capacitor.isNativePlatform()) return null;
-  return '/api/ai';
-}
-
-export async function aiStatus(): Promise<{ configured: boolean; model: string } | null> {
+export async function aiStatus(): Promise<{ configured: boolean; model: string; accounts?: boolean } | null> {
   const url = apiUrl();
   if (!url) return null;
   try {
     const res = await fetch(url, { method: 'GET' });
     if (!res.ok) return null;
     const j = await res.json();
-    return { configured: !!j.configured, model: j.model ?? '' };
+    return { configured: !!j.configured, model: j.model ?? '', accounts: !!j.accounts };
   } catch {
     return null;
   }
@@ -74,18 +69,20 @@ export async function callAi<T>(task: AiTask, input: AiInput): Promise<AiResult<
     throw new AiError('no_backend');
   }
 
+  // Analyses paid by the service are counted on the signed-in account (monthly allowance).
+  const token = ownKey ? null : await accessToken();
   let res: Response;
   try {
     res = await fetch(url, {
       method: 'POST',
-      headers: { 'content-type': 'application/json', ...(ownKey ? { 'x-xai-key': ownKey } : {}) },
+      headers: { 'content-type': 'application/json', ...(ownKey ? { 'x-xai-key': ownKey } : {}), ...(token ? { authorization: `Bearer ${token}` } : {}) },
       body: JSON.stringify({ task, input, locale: profile.locale, model: ai.model || undefined }),
     });
   } catch {
     if (ownKey) return direct<T>(task, input, ownKey, ai.model, profile.locale);
     throw new AiError('network_error');
   }
-  let body: { ok?: boolean; data?: T; error?: string; detail?: string; usage?: AiResult<T>['usage'] } = {};
+  let body: { ok?: boolean; data?: T; error?: string; detail?: string; usage?: AiResult<T>['usage']; quota?: { used: number; limit: number } } = {};
   try {
     body = await res.json();
   } catch {
@@ -93,6 +90,8 @@ export async function callAi<T>(task: AiTask, input: AiInput): Promise<AiResult<
     if (ownKey) return direct<T>(task, input, ownKey, ai.model, profile.locale);
     throw new AiError(res.status === 404 ? 'no_backend' : 'provider_error');
   }
+  if (body.quota) useAccount.setState({ quota: body.quota });
+  else if (token) void refreshQuota();
   if (!res.ok || !body.ok) throw new AiError(body.error ?? 'provider_error', body.detail);
   return { data: body.data as T, usage: body.usage ?? null };
 }

@@ -23,7 +23,7 @@ afterEach(() => vi.unstubAllGlobals());
 describe('AI endpoint', () => {
   it('reports its configuration', async () => {
     const res = await handleAi(new Request('https://turni.example/api/ai'), env);
-    expect(await res.json()).toEqual({ ok: true, configured: true, model: 'grok-4.7' });
+    expect(await res.json()).toEqual({ ok: true, configured: true, model: 'grok-4.7', accounts: false });
   });
 
   it('rejects unknown tasks and empty input', async () => {
@@ -84,5 +84,53 @@ describe('AI endpoint', () => {
     const res = await handleAi(post({ task: 'payslip', input: { text: 'x' } }, { ip: '6.6.6.6' }), env);
     expect(res.status).toBe(401);
     expect(await res.json()).toMatchObject({ error: 'invalid_key' });
+  });
+});
+
+describe('AI monthly allowance (accounts)', async () => {
+  const { sqliteDb } = await import('./sqlite');
+  const { handleApi } = await import('./api');
+  const cloud = { ...env, AI_DAILY_LIMIT: '100', AI_MONTHLY_LIMIT: '2', TOKEN_SECRET: 'test', AUTH_DEBUG_CODES: '1', DB: sqliteDb(':memory:', 'migrations') };
+
+  async function signIn(email: string): Promise<string> {
+    const call = (action: string, body: unknown) => handleApi(new Request(`https://turni.example/api/auth/${action}`, { method: 'POST', headers: { 'x-forwarded-for': '9.9.9.9' }, body: JSON.stringify(body) }), cloud).then((r) => r.json());
+    const up = await call('signup', { email, password: 'password123' });
+    const done = await call('verify', { email, code: up.debugCode });
+    return done.token;
+  }
+
+  it('asks to sign in when the service pays', async () => {
+    mockXai({ types: [] });
+    const res = await handleAi(post({ task: 'shift-types', input: { text: 'x' } }, { ip: '5.5.5.1' }), cloud);
+    expect(res.status).toBe(401);
+    expect(await res.json()).toMatchObject({ error: 'auth_required' });
+  });
+
+  it('counts analyses per account, stops at the limit and gives failed ones back', async () => {
+    const token = await signIn('quota@example.ch');
+    const auth = { ip: '5.5.5.2', authorization: `Bearer ${token}` };
+    mockXai({ types: [] });
+    let res = await handleAi(post({ task: 'shift-types', input: { text: 'x' } }, auth), cloud);
+    expect(await res.json()).toMatchObject({ ok: true, quota: { used: 1, limit: 2 } });
+    // xAI fails: the analysis doesn't count.
+    mockXai({ types: [] }, 500);
+    res = await handleAi(post({ task: 'shift-types', input: { text: 'x' } }, auth), cloud);
+    expect(res.status).toBe(502);
+    expect(await res.json()).toMatchObject({ quota: { used: 1, limit: 2 } });
+    mockXai({ types: [] });
+    res = await handleAi(post({ task: 'shift-types', input: { text: 'x' } }, auth), cloud);
+    expect(await res.json()).toMatchObject({ ok: true, quota: { used: 2, limit: 2 } });
+    const xai = mockXai({ types: [] });
+    res = await handleAi(post({ task: 'shift-types', input: { text: 'x' } }, auth), cloud);
+    expect(res.status).toBe(429);
+    expect(await res.json()).toMatchObject({ error: 'monthly_limit', quota: { used: 2, limit: 2 } });
+    expect(xai).not.toHaveBeenCalled();
+  });
+
+  it("does not count analyses paid with the user's own key", async () => {
+    mockXai({ types: [] });
+    const res = await handleAi(post({ task: 'shift-types', input: { text: 'x' } }, { ip: '5.5.5.5', 'x-xai-key': 'mine' }), cloud);
+    expect(res.status).toBe(200);
+    expect(await res.json()).not.toHaveProperty('quota');
   });
 });

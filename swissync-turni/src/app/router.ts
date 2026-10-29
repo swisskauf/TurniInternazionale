@@ -1,14 +1,14 @@
 import { useSyncExternalStore } from 'react';
 
 export type RoutePath =
-  | '/' | '/calendar' | '/import' | '/hours' | '/earnings' | '/types' | '/scripts' | '/settings' | '/pay-setup';
+  | '/' | '/calendar' | '/import' | '/hours' | '/earnings' | '/types' | '/scripts' | '/settings' | '/pay-setup' | '/account';
 
 export interface Route {
   path: RoutePath;
   params: URLSearchParams;
 }
 
-const KNOWN: RoutePath[] = ['/', '/calendar', '/import', '/hours', '/earnings', '/types', '/scripts', '/settings', '/pay-setup'];
+const KNOWN: RoutePath[] = ['/', '/calendar', '/import', '/hours', '/earnings', '/types', '/scripts', '/settings', '/pay-setup', '/account'];
 
 function parse(): Route {
   const raw = window.location.hash.replace(/^#/, '') || '/';

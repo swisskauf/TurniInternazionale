@@ -60,9 +60,9 @@ export function ListRow({
         className,
       )}
     >
-      {icon && <span className={cn('flex size-9 shrink-0 items-center justify-center rounded-xl bg-surface-3 text-ink-2', danger && 'bg-danger/10 text-danger')}>{icon}</span>}
+      {icon && <span className={cn('flex size-9 shrink-0 items-center justify-center rounded-xl', danger ? 'bg-danger/10 text-danger' : 'bg-surface-3 text-ink-2')}>{icon}</span>}
       <span className="min-w-0 flex-1">
-        <span className={cn('block truncate text-[15px] font-medium text-ink', danger && 'text-danger')}>{title}</span>
+        <span className={cn('block truncate text-[15px] font-medium', danger ? 'text-danger' : 'text-ink')}>{title}</span>
         {subtitle && <span className="mt-0.5 block text-[13px] leading-snug text-muted">{subtitle}</span>}
       </span>
       {right}

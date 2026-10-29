@@ -1,4 +1,4 @@
-package ch.swissync.turni;
+package org.swissync.turni;
 
 import com.getcapacitor.BridgeActivity;
 

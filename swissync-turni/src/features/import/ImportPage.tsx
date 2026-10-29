@@ -10,6 +10,7 @@ import { Checkbox, Field, Input, Select, Switch, Textarea } from '@/components/u
 import { Sheet } from '@/components/ui/Sheet';
 import { Badge, ProgressBar, Spinner, toast } from '@/components/ui/Feedback';
 import { ShiftChip } from '@/components/ShiftChip';
+import { AiAllowance } from '@/components/AiAllowance';
 import { TypePicker } from '@/features/calendar/TypePicker';
 import { TypeEditor, blankType } from '@/features/types/TypeEditor';
 import { ScriptEditor } from '@/features/scripts/ScriptEditor';
@@ -414,6 +415,7 @@ export function ImportPage() {
                 </span>
               </button>
             </div>
+            <AiAllowance className="mx-4 mb-4 sm:mx-5 sm:mb-5" />
             <div className="flex flex-wrap items-center gap-2 border-t border-line px-4 py-3 sm:px-5">
               {ai.mode !== 'off' && <Button size="sm" variant="ghost" icon={<Sparkles className="size-4" />} onClick={() => withAi(true)}>{t.import.oneShotAi}</Button>}
               {chosen && chosen.result.days.length > 0 && (

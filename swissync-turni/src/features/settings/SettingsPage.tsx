@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Capacitor } from '@capacitor/core';
-import { Database, Download, FlaskConical, KeyRound, Layers, Plus, ShieldCheck, Sparkles, Trash2, Upload, Wallet, Wand2, X } from 'lucide-react';
+import { Cloud, Database, Download, FlaskConical, KeyRound, Layers, Plus, ShieldCheck, Sparkles, Trash2, Upload, UserRound, Wallet, Wand2, X } from 'lucide-react';
+import { useAccount, useAccountsAvailable } from '@/cloud/account';
 import { IconButton } from '@/components/ui/Button';
 import { Card, Divided, ListRow, PageHeader, SectionTitle } from '@/components/ui/Card';
 import { Field, Input, NumberInput, Segmented, Select, Switch } from '@/components/ui/Form';
@@ -31,6 +32,8 @@ export function SettingsPage() {
   const [newHoliday, setNewHoliday] = useState({ date: '', name: '' });
   const year = new Date().getFullYear();
   const native = Capacitor.isNativePlatform();
+  const account = useAccount((s) => s.user);
+  const accountsAvailable = useAccountsAvailable();
 
   useEffect(() => {
     aiStatus().then(setStatus);
@@ -75,6 +78,8 @@ export function SettingsPage() {
 
   const reset = async () => {
     if (!(await confirmDialog({ title: t.settings.reset, text: t.settings.resetConfirm, confirmLabel: t.common.delete, cancelLabel: t.common.cancel, danger: true }))) return;
+    // Signed in: the data is deleted on the other devices and in the account too.
+    if (useAccount.getState().user) await import('@/cloud/sync').then((m) => m.wipeCloudCopy()).catch(() => undefined);
     useStore.getState().resetAll();
     navigate('/');
   };
@@ -82,6 +87,17 @@ export function SettingsPage() {
   return (
     <div className="mx-auto max-w-3xl">
       <PageHeader title={t.settings.title} onBack={() => goBack('/')} />
+
+      {accountsAvailable && (
+        <Card className="mb-4 overflow-hidden">
+          <ListRow
+            icon={account ? <Cloud className="size-4.5" /> : <UserRound className="size-4.5" />}
+            title={account ? account.name || account.email : t.account.cta}
+            subtitle={account ? t.account.title : t.account.ctaHint}
+            onClick={() => navigate('/account')}
+          />
+        </Card>
+      )}
 
       <Card className="overflow-hidden lg:hidden">
         <Divided>
