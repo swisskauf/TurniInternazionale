@@ -13,7 +13,8 @@ Swissync Turni macht aus deinem Dienstplan Arbeitsstunden, Lohn und einen Berich
 
 PLAN IMPORTIEREN, WIE DU IHN BEKOMMST
 • Foto oder Scan, PDF, Excel/CSV oder eine einfache Nachricht
-• Erkennung auf dem Gerät, auch offline: kein Konto, keine Kosten
+• Erkennung auf dem Gerät, auch offline — auch schiefe Fotos und farbige Zellen — ohne Kosten
+• Die Legende des Plans wird gelesen: Zeiten und Pausen jeder Schicht, bereit zum Bestätigen
 • Findet deine Zeile unter den Kollegen; du bestätigst jeden Tag vor dem Speichern
 
 DEINE SCHICHTEN, DEINE CODES
@@ -36,8 +37,12 @@ WAS DU VERDIENST
 • Oder Lohnabrechnung hochladen: der xAI-Assistent richtet alles ein
 • Schätzung mit der echten Lohnabrechnung vergleichen
 
+AUF ALLEN GERÄTEN (OPTIONAL)
+• Kostenloses Konto mit E-Mail, Apple oder Google: Schichten auf Handy, Tablet und Computer synchronisiert
+• 6 kostenlose xAI-Analysen pro Monat für schwierige Pläne
+
 PRIVATSPHÄRE ZUERST
-Deine Daten bleiben auf dem Gerät. Dokumente gehen nur auf deinen Wunsch an den xAI-Assistenten.
+Ohne Konto bleiben deine Daten auf dem Gerät. Keine Werbung, kein Tracking. Dokumente gehen nur auf deinen Wunsch an den xAI-Assistenten, und das Konto lässt sich in der App sofort löschen.
 
 Swissync Turni ist Teil der Swissync-Plattform.
 

@@ -13,7 +13,8 @@ Swissync Turni transforme votre planning en heures travaillées, en salaire et e
 
 IMPORTEZ LE PLANNING TEL QUE VOUS LE RECEVEZ
 • Photo ou scan, PDF, Excel/CSV ou simple message
-• Reconnaissance sur l'appareil, même hors ligne : sans compte, sans frais
+• Reconnaissance sur l'appareil, même hors ligne — photos de travers et cellules colorées comprises — sans frais
+• La légende du planning est lue pour vous : horaires et pauses de chaque service, prêts à confirmer
 • Trouve votre ligne parmi vos collègues ; vous confirmez chaque jour avant d'enregistrer
 
 VOS HORAIRES, VOS CODES
@@ -36,8 +37,12 @@ CE QUE VOUS GAGNEZ
 • Ou chargez une fiche de paie : l'assistant xAI configure tout
 • Comparez l'estimation avec la fiche de paie réelle
 
+SUR TOUS VOS APPAREILS (FACULTATIF)
+• Compte gratuit avec e-mail, Apple ou Google : horaires synchronisés entre téléphone, tablette et ordinateur
+• 6 analyses xAI gratuites par mois pour les plannings difficiles
+
 LA CONFIDENTIALITÉ D'ABORD
-Vos données restent sur l'appareil. Les documents ne sont envoyés à l'assistant xAI que si vous le demandez.
+Sans compte, vos données restent sur l'appareil. Ni publicité, ni pistage. Les documents ne vont à l'assistant xAI que si vous le demandez, et le compte se supprime depuis l'app en un instant.
 
 Swissync Turni fait partie de la plateforme Swissync.
 

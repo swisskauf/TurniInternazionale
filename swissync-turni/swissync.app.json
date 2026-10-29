@@ -20,7 +20,8 @@
     "import": "/#/import",
     "hours": "/#/hours",
     "earnings": "/#/earnings",
-    "settings": "/#/settings"
+    "settings": "/#/settings",
+    "account": "/#/account"
   },
   "platforms": {
     "web": true,
@@ -33,10 +34,23 @@
     }
   },
   "api": {
-    "ai": "/api/ai"
+    "ai": "/api/ai",
+    "auth": "/api/auth",
+    "sync": "/api/sync"
   },
   "data": {
     "storage": "local-indexeddb",
-    "account": false
+    "account": "optional",
+    "sync": "cloudflare-d1-eu"
+  },
+  "url": "https://turni.swissync.org",
+  "publisher": {
+    "name": "Swisskauf Sagl",
+    "support": "support@swissync.org",
+    "privacy": "https://turni.swissync.org/privacy.html"
+  },
+  "ai": {
+    "provider": "xai",
+    "monthlyAllowance": 6
   }
 }

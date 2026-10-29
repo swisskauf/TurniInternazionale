@@ -13,7 +13,8 @@ Swissync Turni turns your shift plan into worked hours, earnings and a report re
 
 IMPORT YOUR PLAN AS YOU GET IT
 • Photo or scan, PDF, Excel/CSV or a simple message
-• On-device recognition, even offline: no account, no cost
+• On-device recognition, even offline — also tilted photos and colored cells — at no cost
+• The plan's legend is read for you: hours and breaks of every shift, ready to confirm
 • Finds your row among your colleagues and lets you confirm every day before saving
 
 YOUR SHIFTS, YOUR CODES
@@ -36,8 +37,12 @@ WHAT YOU EARN
 • Or upload a payslip: the xAI assistant configures everything
 • Compare the estimate with your real payslip
 
+ON ALL YOUR DEVICES (OPTIONAL)
+• Free account with email, Apple or Google: shifts synced across phone, tablet and computer
+• 6 free xAI analyses a month for the hardest plans
+
 PRIVACY FIRST
-Your data stays on your device. Documents are sent to the xAI assistant only when you ask.
+Without an account your data stays on your device. No ads, no tracking. Documents go to the xAI assistant only when you ask, and the account can be deleted from the app in seconds.
 
 Swissync Turni is part of the Swissync platform.
 

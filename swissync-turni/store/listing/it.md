@@ -13,7 +13,8 @@ Swissync Turni trasforma il tuo piano turni in ore lavorate, guadagni e un rappo
 
 IMPORTA IL PIANO COME LO RICEVI
 • Foto o scansione, PDF, Excel/CSV o un semplice messaggio
-• Riconoscimento sul dispositivo, anche offline: niente account, nessun costo
+• Riconoscimento sul dispositivo, anche offline: anche le foto storte o con celle colorate, nessun costo
+• La legenda del piano viene letta da sola: orari e pause di ogni turno pronti da confermare
 • Trova la tua riga tra i colleghi e ti fa confermare ogni giorno prima di salvare
 
 I TUOI TURNI, I TUOI CODICI
@@ -36,8 +37,12 @@ QUANTO GUADAGNI
 • Oppure carica una busta paga: l'assistente xAI configura tutto per te
 • Confronta la stima con la busta paga reale
 
+SU TUTTI I TUOI DISPOSITIVI (FACOLTATIVO)
+• Account gratuito con email, Apple o Google: turni sincronizzati tra telefono, tablet e computer
+• 6 analisi xAI gratuite al mese per i piani più difficili
+
 PRIVACY PRIMA DI TUTTO
-I tuoi dati restano sul dispositivo. I documenti vengono inviati all'assistente xAI solo quando lo chiedi tu.
+Senza account i tuoi dati restano sul dispositivo. Nessuna pubblicità, nessun tracciamento. I documenti vengono inviati all'assistente xAI solo quando lo chiedi tu, e l'account si elimina dall'app in un attimo.
 
 Swissync Turni fa parte della piattaforma Swissync.
 
