@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Swissync Turni</string>
+    <string name="title_activity_main">Swissync Turni</string>
+    <string name="package_name">ch.swissync.turni</string>
+    <string name="custom_url_scheme">ch.swissync.turni</string>
+</resources>

@@ -1,3 +1,7 @@
+> **Nuova app: [Swissync Turni](swissync-turni/README.md)** — la versione migliorata di ScattaTurni per la piattaforma Swissync
+> (web, iOS, Android): riconoscimento locale dei piani senza consumare xAI, ore e guadagni, PDF per il datore di lavoro.
+> Il codice dell'app originale ScattaTurni qui sotto resta invariato.
+
 <div align="center">
 <img width="1200" height="475" alt="GHBanner" src="https://ai.google.dev/static/site-assets/images/share-ais-513315318.png" />
 </div>

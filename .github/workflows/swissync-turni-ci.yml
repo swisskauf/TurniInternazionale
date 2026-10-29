@@ -1,0 +1,76 @@
+name: Swissync Turni · CI
+
+on:
+  push:
+    paths: ['swissync-turni/**', '.github/workflows/swissync-turni-ci.yml']
+  pull_request:
+    paths: ['swissync-turni/**']
+  workflow_dispatch:
+
+defaults:
+  run:
+    working-directory: swissync-turni
+
+jobs:
+  web:
+    name: Typecheck, test, build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: swissync-turni/package-lock.json
+      - run: npm ci
+      - run: npm test
+      - run: npm run build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: swissync-turni-web
+          path: swissync-turni/dist
+          retention-days: 14
+
+  android:
+    name: Android debug APK
+    runs-on: ubuntu-latest
+    needs: web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: swissync-turni/package-lock.json
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - run: npm ci && npm run build && npx cap sync android
+      - name: Build APK
+        working-directory: swissync-turni/android
+        run: ./gradlew assembleDebug --no-daemon
+      - uses: actions/upload-artifact@v4
+        with:
+          name: swissync-turni-android-debug-apk
+          path: swissync-turni/android/app/build/outputs/apk/debug/*.apk
+          retention-days: 30
+
+  ios:
+    name: iOS simulator build
+    runs-on: macos-15
+    needs: web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: swissync-turni/package-lock.json
+      - run: npm ci && npm run build && npx cap sync ios
+      - name: Build for simulator (no signing)
+        working-directory: swissync-turni/ios/App
+        run: |
+          xcodebuild -project App.xcodeproj -scheme App -configuration Debug \
+            -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' \
+            CODE_SIGNING_ALLOWED=NO build | tail -n 40

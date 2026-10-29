@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Privacy · Swissync Turni</title>
+<style>
+  :root { --ink:#0d1321; --muted:#667085; --bg:#f3f4f7; --card:#fff; --brand:#e5223f; --line:rgba(15,23,42,.08); }
+  @media (prefers-color-scheme: dark) { :root { --ink:#eef1f6; --muted:#8a94a6; --bg:#080b11; --card:#10151f; --line:rgba(255,255,255,.08); } }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:16px/1.6 -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", sans-serif; }
+  main { max-width: 760px; margin: 0 auto; padding: 40px 18px 64px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:20px; padding:28px; margin-top:18px; }
+  h1 { font-size: 30px; letter-spacing:-.02em; margin: 0; }
+  h2 { font-size: 19px; margin: 26px 0 6px; }
+  p, li { color: var(--ink); }
+  .muted { color: var(--muted); }
+  .brand { display:flex; align-items:center; gap:12px; }
+  .logo { width:40px; height:40px; border-radius:11px; background:linear-gradient(135deg,#ff5a68,#d81b3c); position:relative; }
+  .logo:before, .logo:after { content:""; position:absolute; background:#fff; border-radius:2px; left:50%; top:50%; transform:translate(-50%,-50%); }
+  .logo:before { width:7px; height:20px; } .logo:after { width:20px; height:7px; }
+  nav a { color: var(--brand); font-weight:600; text-decoration:none; margin-right:14px; }
+</style>
+</head>
+<body>
+<main>
+  <div class="brand"><div class="logo" aria-hidden="true"></div><div><h1>Swissync Turni</h1><div class="muted">Informativa sulla privacy · Privacy policy</div></div></div>
+  <nav style="margin-top:16px"><a href="#it">Italiano</a><a href="#en">English</a></nav>
+
+  <section class="card" id="it">
+    <p class="muted">Ultimo aggiornamento: 29 ottobre 2026</p>
+    <h2>In breve</h2>
+    <p>Swissync Turni funziona senza account. I tuoi turni, le ore, il profilo paga e le impostazioni restano salvati <strong>solo sul tuo dispositivo</strong>. Non usiamo pubblicità, tracciamento né analisi statistiche.</p>
+    <h2>Dati trattati sul dispositivo</h2>
+    <ul>
+      <li>Nome, datore di lavoro, numero personale e reparto (se li inserisci), usati solo per riconoscerti nel piano e per il rapporto PDF.</li>
+      <li>Turni, orari, note, codici dei turni, script di riconoscimento e profilo paga.</li>
+      <li>Le foto, i PDF e i fogli di calcolo dei piani turni vengono letti sul dispositivo (riconoscimento ottico dei caratteri locale) e non vengono conservati dopo l’importazione.</li>
+    </ul>
+    <h2>Assistente xAI (facoltativo)</h2>
+    <p>Solo quando lo scegli esplicitamente (ad esempio «Crea script con xAI» o «Carica una busta paga»), il documento selezionato viene inviato a xAI per l’analisi:</p>
+    <ul>
+      <li><strong>Swissync Cloud</strong>: il documento passa dal server di Swissync Turni, che lo inoltra a xAI e restituisce il risultato senza salvarlo.</li>
+      <li><strong>Chiave personale</strong>: il documento viene inviato a xAI con la tua chiave API, salvata solo sul dispositivo.</li>
+    </ul>
+    <p>Il trattamento da parte di xAI è regolato dalle condizioni di xAI. Puoi disattivare l’assistente in qualsiasi momento in Impostazioni → Assistente xAI. Prima di caricare una busta paga puoi oscurare i dati personali.</p>
+    <h2>Notifiche</h2>
+    <p>I promemoria dei turni sono notifiche locali programmate sul dispositivo; nessun dato viene inviato a server di notifica.</p>
+    <h2>Conservazione e cancellazione</h2>
+    <p>Puoi esportare un backup o cancellare tutti i dati in Impostazioni → Dati. Disinstallando l’app i dati vengono eliminati dal dispositivo.</p>
+    <h2>Minori</h2>
+    <p>L’app è destinata a lavoratori e non è rivolta a minori di 16 anni.</p>
+    <h2>Contatti</h2>
+    <p>Titolare: Swissync. Per domande sulla privacy: <span id="contact">vedi i contatti dello sviluppatore indicati nello store</span>.</p>
+  </section>
+
+  <section class="card" id="en">
+    <p class="muted">Last updated: 29 October 2026</p>
+    <h2>Summary</h2>
+    <p>Swissync Turni works without an account. Your shifts, hours, pay profile and settings are stored <strong>only on your device</strong>. There are no ads, no tracking and no analytics.</p>
+    <h2>Data processed on the device</h2>
+    <ul>
+      <li>Name, employer, employee number and department (if you enter them), used only to find you in the plan and for the PDF report.</li>
+      <li>Shifts, times, notes, shift codes, recognition scripts and pay profile.</li>
+      <li>Photos, PDFs and spreadsheets of shift plans are read on the device (on-device text recognition) and are not kept after the import.</li>
+    </ul>
+    <h2>xAI assistant (optional)</h2>
+    <p>Only when you explicitly choose it (e.g. “Create script with xAI” or “Upload a payslip”), the selected document is sent to xAI for analysis — either through the Swissync Turni server, which forwards it and returns the result without storing it, or directly with your own xAI API key stored on the device. You can switch the assistant off in Settings → xAI assistant.</p>
+    <h2>Notifications</h2>
+    <p>Shift reminders are local notifications scheduled on the device.</p>
+    <h2>Retention and deletion</h2>
+    <p>You can export a backup or delete all data in Settings → Data. Uninstalling the app removes the data from the device.</p>
+    <h2>Contact</h2>
+    <p>Controller: Swissync. For privacy questions, use the developer contact shown in the app store listing.</p>
+  </section>
+</main>
+</body>
+</html>

@@ -1,0 +1,164 @@
+@import "@fontsource-variable/inter";
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  --bg: #f3f4f7;
+  --bg-glow: rgba(239, 35, 60, 0.07);
+  --surface: #ffffff;
+  --surface-2: #f6f7f9;
+  --surface-3: #eceef2;
+  --border: rgba(15, 23, 42, 0.08);
+  --border-strong: rgba(15, 23, 42, 0.14);
+  --ink: #0d1321;
+  --ink-2: #2b3445;
+  --muted: #667085;
+  --faint: #98a2b3;
+  --brand: #e5223f;
+  --brand-2: #ff4d5e;
+  --brand-ink: #ffffff;
+  --brand-soft: rgba(229, 34, 63, 0.09);
+  --success: #12a150;
+  --warning: #d97706;
+  --danger: #dc2626;
+  --hero-from: #121a2b;
+  --hero-to: #1d2840;
+  --shadow: 0 1px 2px rgba(16, 24, 40, 0.04), 0 8px 24px -12px rgba(16, 24, 40, 0.12);
+  --shadow-lg: 0 24px 60px -24px rgba(16, 24, 40, 0.35);
+  color-scheme: light;
+}
+
+.dark {
+  --bg: #080b11;
+  --bg-glow: rgba(255, 77, 94, 0.08);
+  --surface: #10151f;
+  --surface-2: #151b27;
+  --surface-3: #1c2331;
+  --border: rgba(255, 255, 255, 0.07);
+  --border-strong: rgba(255, 255, 255, 0.13);
+  --ink: #eef1f6;
+  --ink-2: #c9d0dc;
+  --muted: #8a94a6;
+  --faint: #5d6778;
+  --brand: #ff3d55;
+  --brand-2: #ff6b78;
+  --brand-ink: #ffffff;
+  --brand-soft: rgba(255, 61, 85, 0.14);
+  --success: #34d399;
+  --warning: #fbbf24;
+  --danger: #f87171;
+  --hero-from: #141c2d;
+  --hero-to: #0f1522;
+  --shadow: 0 1px 0 rgba(255, 255, 255, 0.03) inset, 0 8px 24px -12px rgba(0, 0, 0, 0.6);
+  --shadow-lg: 0 24px 60px -20px rgba(0, 0, 0, 0.8);
+  color-scheme: dark;
+}
+
+@theme inline {
+  --font-sans: "Inter Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-line: var(--border);
+  --color-line-strong: var(--border-strong);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-muted: var(--muted);
+  --color-faint: var(--faint);
+  --color-brand: var(--brand);
+  --color-brand-2: var(--brand-2);
+  --color-brand-soft: var(--brand-soft);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
+  --shadow-card: var(--shadow);
+  --shadow-float: var(--shadow-lg);
+  --radius-card: 1.25rem;
+}
+
+@layer base {
+  html,
+  body,
+  #root {
+    min-height: 100%;
+  }
+  html {
+    -webkit-text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
+  }
+  body {
+    background-color: var(--bg);
+    background-image: radial-gradient(1200px 520px at 50% -180px, var(--bg-glow), transparent 70%);
+    background-repeat: no-repeat;
+    color: var(--ink);
+    font-family: var(--font-sans);
+    font-feature-settings: "cv11", "ss01";
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    overscroll-behavior-y: none;
+  }
+  h1, h2, h3, h4 {
+    letter-spacing: -0.02em;
+  }
+  button, [role="button"] {
+    cursor: pointer;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  input, select, textarea {
+    font: inherit;
+  }
+  ::selection {
+    background: var(--brand-soft);
+  }
+  :focus-visible {
+    outline: 2px solid var(--brand);
+    outline-offset: 2px;
+  }
+}
+
+@layer utilities {
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+  .safe-top {
+    padding-top: env(safe-area-inset-top);
+  }
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .pb-nav {
+    padding-bottom: calc(env(safe-area-inset-bottom) + 6.5rem);
+  }
+  .glass {
+    background: color-mix(in oklab, var(--surface) 78%, transparent);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+    backdrop-filter: saturate(180%) blur(20px);
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    scrollbar-width: none;
+  }
+  .brand-gradient {
+    background-image: linear-gradient(135deg, var(--brand-2), var(--brand));
+  }
+  .hero-gradient {
+    background-image:
+      radial-gradient(420px 220px at 100% 0%, rgba(255, 77, 94, 0.22), transparent 70%),
+      radial-gradient(360px 240px at 0% 100%, rgba(99, 102, 241, 0.18), transparent 70%),
+      linear-gradient(160deg, var(--hero-from), var(--hero-to));
+  }
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+@media print {
+  body {
+    background: #fff !important;
+  }
+}

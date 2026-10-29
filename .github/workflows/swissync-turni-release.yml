@@ -1,0 +1,125 @@
+name: Swissync Turni · Release (stores + web)
+
+# Manual release. Each job runs only when its secrets are configured
+# (see swissync-turni/docs/STORE_RELEASE.md).
+on:
+  workflow_dispatch:
+    inputs:
+      android_track:
+        description: 'Google Play track'
+        default: internal
+        type: choice
+        options: [internal, alpha, beta, production]
+      web:
+        description: 'Deploy web app to Vercel (production)'
+        default: true
+        type: boolean
+
+defaults:
+  run:
+    working-directory: swissync-turni
+
+jobs:
+  web:
+    name: Web · Vercel production
+    if: ${{ inputs.web }}
+    runs-on: ubuntu-latest
+    env:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Deploy
+        if: ${{ env.VERCEL_TOKEN != '' }}
+        # Run from the repo root: the Vercel project's Root Directory is `swissync-turni`.
+        working-directory: .
+        run: |
+          npx vercel@latest pull --yes --environment=production --token "$VERCEL_TOKEN"
+          npx vercel@latest build --prod --token "$VERCEL_TOKEN"
+          npx vercel@latest deploy --prebuilt --prod --token "$VERCEL_TOKEN"
+
+  android:
+    name: Android · Google Play
+    runs-on: ubuntu-latest
+    env:
+      KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+      PLAY_JSON: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: swissync-turni/package-lock.json
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - run: npm ci && npm run build && npx cap sync android
+        env:
+          VITE_API_BASE: ${{ vars.SWISSYNC_TURNI_API_BASE }}
+      - name: Decode upload key
+        if: ${{ env.KEYSTORE_B64 != '' }}
+        run: echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/upload.jks"
+      - name: Build signed AAB
+        if: ${{ env.KEYSTORE_B64 != '' }}
+        working-directory: swissync-turni/android
+        env:
+          ANDROID_KEYSTORE_PATH: ${{ runner.temp }}/upload.jks
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          ANDROID_VERSION_CODE: ${{ github.run_number }}
+        run: ./gradlew bundleRelease --no-daemon
+      - uses: actions/upload-artifact@v4
+        if: ${{ env.KEYSTORE_B64 != '' }}
+        with:
+          name: swissync-turni-android-release-aab
+          path: swissync-turni/android/app/build/outputs/bundle/release/*.aab
+      - name: Upload to Google Play
+        if: ${{ env.KEYSTORE_B64 != '' && env.PLAY_JSON != '' }}
+        uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+          packageName: ch.swissync.turni
+          releaseFiles: swissync-turni/android/app/build/outputs/bundle/release/app-release.aab
+          track: ${{ inputs.android_track }}
+          status: ${{ inputs.android_track == 'production' && 'completed' || 'draft' }}
+
+  ios:
+    name: iOS · App Store Connect (TestFlight)
+    runs-on: macos-15
+    env:
+      ASC_KEY_B64: ${{ secrets.APP_STORE_CONNECT_API_KEY_BASE64 }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: swissync-turni/package-lock.json
+      - run: npm ci && npm run build && npx cap sync ios
+        env:
+          VITE_API_BASE: ${{ vars.SWISSYNC_TURNI_API_BASE }}
+      - name: Archive and upload
+        if: ${{ env.ASC_KEY_B64 != '' }}
+        working-directory: swissync-turni/ios/App
+        env:
+          ASC_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+          TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          KEY="$RUNNER_TEMP/AuthKey.p8"
+          echo "$ASC_KEY_B64" | base64 -d > "$KEY"
+          AUTH="-allowProvisioningUpdates -authenticationKeyPath $KEY -authenticationKeyID $ASC_KEY_ID -authenticationKeyIssuerID $ASC_ISSUER_ID"
+          xcodebuild -project App.xcodeproj -scheme App -configuration Release \
+            -destination 'generic/platform=iOS' -archivePath "$RUNNER_TEMP/App.xcarchive" \
+            DEVELOPMENT_TEAM="$TEAM_ID" CODE_SIGN_STYLE=Automatic CURRENT_PROJECT_VERSION=${{ github.run_number }} \
+            $AUTH archive
+          /usr/libexec/PlistBuddy -c "Set :teamID $TEAM_ID" ExportOptions.plist
+          xcodebuild -exportArchive -archivePath "$RUNNER_TEMP/App.xcarchive" \
+            -exportOptionsPlist ExportOptions.plist -exportPath "$RUNNER_TEMP/export" $AUTH

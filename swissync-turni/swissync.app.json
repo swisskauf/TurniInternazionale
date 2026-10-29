@@ -1,0 +1,42 @@
+{
+  "id": "swissync-turni",
+  "name": "Swissync Turni",
+  "shortName": "Turni",
+  "version": "1.0.0",
+  "category": "lavoro",
+  "description": {
+    "it": "Traccia ore lavorative e guadagni dai turni del tuo piano. Riconoscimento locale dei piani, report PDF per il datore di lavoro.",
+    "en": "Track working hours and earnings from your shift plan. On-device plan recognition, PDF report for your employer.",
+    "de": "Arbeitsstunden und Lohn aus deinem Dienstplan erfassen. Planerkennung auf dem Gerät, PDF-Bericht für den Arbeitgeber.",
+    "fr": "Suivez vos heures et votre salaire à partir de votre planning. Reconnaissance locale, rapport PDF pour l'employeur."
+  },
+  "icon": "/icons/icon-512.png",
+  "iconSvg": "/icons/icon.svg",
+  "color": "#e5223f",
+  "entry": "/",
+  "deepLinks": {
+    "today": "/#/",
+    "calendar": "/#/calendar",
+    "import": "/#/import",
+    "hours": "/#/hours",
+    "earnings": "/#/earnings",
+    "settings": "/#/settings"
+  },
+  "platforms": {
+    "web": true,
+    "pwa": true,
+    "ios": {
+      "bundleId": "ch.swissync.turni"
+    },
+    "android": {
+      "packageName": "ch.swissync.turni"
+    }
+  },
+  "api": {
+    "ai": "/api/ai"
+  },
+  "data": {
+    "storage": "local-indexeddb",
+    "account": false
+  }
+}
