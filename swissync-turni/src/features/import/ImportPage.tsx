@@ -437,7 +437,7 @@ export function ImportPage() {
       )}
 
       {phase === 'review' && chosen && doc && (
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_340px]">
+        <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1fr_340px]">
           <div className="min-w-0 space-y-4">
             <Card className="p-4 sm:p-5">
               <div className="flex flex-wrap items-center gap-2">
@@ -503,7 +503,7 @@ export function ImportPage() {
             </Card>
           </div>
 
-          <div className="space-y-4 lg:sticky lg:top-8 lg:self-start">
+          <div className="space-y-4 xl:sticky xl:top-8 xl:self-start">
             {doc.images[0] && (
               <Card className="overflow-hidden">
                 <img src={doc.images[0]} alt="" className="max-h-64 w-full object-cover object-top" />
@@ -537,6 +537,12 @@ export function ImportPage() {
               <Button variant="primary" size="lg" block disabled={!included} onClick={apply}>{t.import.apply(included)}</Button>
             </Card>
           </div>
+        </div>
+      )}
+
+      {phase === 'review' && included > 0 && (
+        <div className="pointer-events-none fixed inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+92px)] z-30 flex justify-center px-4 lg:bottom-6 lg:pl-[264px] xl:hidden">
+          <Button variant="primary" size="lg" className="pointer-events-auto shadow-float" onClick={apply}>{t.import.apply(included)}</Button>
         </div>
       )}
 
