@@ -250,6 +250,8 @@ export const de: Dict = {
     statusManual: 'Von Hand geändert',
     statusUnknown: 'Unbekannter Code',
     statusFuzzy: 'Bitte prüfen',
+    byColor: 'nach Farbe',
+    fromPlanLegend: 'Aus der Legende des Plans gelesen, ohne xAI.',
     unknownCodes: (n: number) => `${n} ${plural(n, 'Code muss', 'Codes müssen')} definiert werden`,
     unknownCodesHint: 'Definiere sie jetzt – sie werden dann auch künftig automatisch erkannt.',
     defineFromLegend: (n: number) => `${n} ${plural(n, 'Schicht', 'Schichten')} aus der Legende hinzufügen`,

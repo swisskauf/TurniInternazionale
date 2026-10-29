@@ -1,4 +1,4 @@
-import { drawScaled, loadImage, preprocessForOcr, toJpegDataUrl } from '@/lib/image';
+import { drawScaled, loadImage, preprocessForOcr, rasterOf, toJpegDataUrl } from '@/lib/image';
 import { groupLines, linesToText, tokensFromCells, tokensFromText, type PlanDocument, type Token } from '@/engine/recognition/tokens';
 import { fmtHM } from '@/engine/time';
 import type { Locale, SourceKind } from '@/engine/types';
@@ -103,6 +103,7 @@ export async function readImage(file: File, locale: Locale, onProgress?: Progres
     text: linesToText(groupLines(tokens)),
     images: [toJpegDataUrl(canvas)],
     pages: 1,
+    raster: rasterOf(canvas),
   };
 }
 

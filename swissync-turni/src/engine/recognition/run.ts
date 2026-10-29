@@ -1,14 +1,17 @@
-import { makeISO } from '../dates';
+import { makeISO, todayISO } from '../dates';
 import type { ISODate, RecognitionScript, ShiftType } from '../types';
 import { createCellInterpreter, type CellResult } from './codes';
 import {
   columnBounds, columnDates, findHeaders, nameScore, rowLabels, rowTokens, WEEKDAY_ABBR, type RowCandidate,
 } from './grid';
-import { detectPeriod, monthFromName, type PeriodGuess } from './period';
+import { detectPeriod, detectRanges, monthFromName, type PeriodGuess } from './period';
+import { readTable } from './table';
 import { cx, groupLines, normalizeWords, stripAccents, type Line, type PlanDocument, type Token } from './tokens';
 
 export interface RecognizedDay extends CellResult {
   date: ISODate;
+  /** Recognized from the cell color (the text was unreadable). */
+  byColor?: boolean;
 }
 
 export interface RecognitionContext {
@@ -138,6 +141,48 @@ function runGrid(doc: PlanDocument, lines: Line[], script: RecognitionScript, ct
   if (!matchedAny) res.issues.push(person && !ambiguous ? 'no-person' : 'choose-person');
   return finalize(res);
 }
+
+// ---------------------------------------------------------------------------
+// Photographed table: geometry from the date header + cell colors
+// ---------------------------------------------------------------------------
+
+function runTable(doc: PlanDocument, script: RecognitionScript, ctx: RecognitionContext): RecognitionResult | null {
+  let period = resolvePeriod(doc, ctx);
+  const ranges = detectRanges(doc.text);
+  const ref = ranges[0]?.start ?? (period ? makeISO(period.year, period.month, 15) : null) ?? todayISO();
+  const interpret = interpreterFor(script, ctx);
+  const pages = [...new Set(doc.tokens.map((t) => t.page))].sort((a, b) => a - b);
+  const res: RecognitionResult = { scriptId: script.id, layout: 'grid', period, people: [], days: [], quality: 0, issues: [] };
+  let found = false;
+  let ambiguous = false;
+  for (const page of pages) {
+    const t = readTable({
+      tokens: doc.tokens.filter((k) => k.page === page),
+      raster: page === 1 ? doc.raster : undefined,
+      ref,
+      ranges,
+      person: script.personLabel || ctx.person,
+      aliases: script.personAliases,
+      interpret,
+    });
+    if (!t) continue;
+    found = true;
+    ambiguous ||= t.ambiguous;
+    for (const p of t.people) if (!res.people.includes(p)) res.people.push(p);
+    if (t.personLabel) res.personLabel = t.personLabel;
+    res.days.push(...t.cells);
+  }
+  if (!found) return null;
+  if (!period && res.days.length) {
+    const mid = res.days[res.days.length >> 1].date;
+    period = { year: Number(mid.slice(0, 4)), month: Number(mid.slice(5, 7)), confidence: 0.7, source: 'table' };
+    res.period = period;
+  }
+  if (!res.personLabel) res.issues.push(script.personLabel || ctx.person ? (ambiguous ? 'choose-person' : 'no-person') : 'choose-person');
+  return finalize(res);
+}
+
+const rank = (r: RecognitionResult) => r.quality + Math.min(r.days.length, 62) * 0.002;
 
 // ---------------------------------------------------------------------------
 // Transposed grid: one row per day, one column per person
@@ -296,7 +341,11 @@ function runList(doc: PlanDocument, lines: Line[], script: RecognitionScript, ct
 export function runScript(doc: PlanDocument, script: RecognitionScript, ctx: RecognitionContext): RecognitionResult {
   const lines = groupLines(doc.tokens);
   if (script.layout === 'list') return runList(doc, lines, script, ctx);
-  const grid = runGrid(doc, lines, script, ctx);
+  let grid = runGrid(doc, lines, script, ctx);
+  if (script.header !== 'day-numbers') {
+    const table = runTable(doc, script, ctx);
+    if (table && (rank(table) > rank(grid) || (!grid.days.length && !table.days.length && table.people.length > grid.people.length))) grid = table;
+  }
   if (grid.days.length || script.header !== 'auto') return grid;
   // No day header found: maybe the grid is transposed (days in rows).
   if (grid.issues.includes('no-header')) {

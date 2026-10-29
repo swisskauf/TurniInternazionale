@@ -1,3 +1,5 @@
+import { diffDays, makeISO } from '../dates';
+import type { ISODate } from '../types';
 import { stripAccents } from './tokens';
 
 const MONTHS: Record<string, number> = {};
@@ -80,9 +82,11 @@ export function detectPeriod(rawText: string, fallback?: { year?: number; month?
   // Full dates: take the most frequent month.
   const counts = new Map<string, number>();
   const full = /(?<!\d)(\d{1,2})[./-](\d{1,2})[./-](\d{2}|\d{4})(?!\d)/g;
-  for (const m of text.matchAll(full)) {
-    const month = Number(m[2]);
-    const y = fixYear(Number(m[3]));
+  const dates = [...text.matchAll(full)].map((m) => ({ month: Number(m[2]), y: fixYear(Number(m[3])), long: m[3].length === 4 }));
+  // "05.10.20" in a narrow column is "05.10.2026" cut off, not 2020: trust 4-digit years first.
+  const longYears = new Set(dates.filter((d) => d.long).map((d) => d.y));
+  for (const { month, y, long } of dates) {
+    if (!long && longYears.size && !longYears.has(y)) continue;
     if (month >= 1 && month <= 12 && plausibleYear(y)) {
       const k = `${y}-${month}`;
       counts.set(k, (counts.get(k) ?? 0) + 1);
@@ -104,4 +108,30 @@ export function detectPeriod(rawText: string, fallback?: { year?: number; month?
 
   if (fallback?.year && fallback?.month) return { year: fallback.year, month: fallback.month, confidence: 0.3, source: 'hint' };
   return null;
+}
+
+export interface DateRange {
+  start: ISODate;
+  end: ISODate;
+}
+
+/** "05.10.2026 - 25.10.2026", "dal 5.10.26 al 25.10.26": the spans a plan's title states. */
+export function detectRanges(rawText: string): DateRange[] {
+  const out: DateRange[] = [];
+  const text = stripAccents(rawText).toLowerCase();
+  // OCR may insert a space next to a separator ("08.11 .2026").
+  const re = /(?<![\d.])(\d{1,2}) ?[./-] ?(\d{1,2}) ?[./-] ?(\d{4}|\d{2})(?!\d)\s*(?:-|–|—|al|bis|au|to|a)\s*(\d{1,2}) ?[./-] ?(\d{1,2}) ?[./-] ?(\d{4}|\d{2})(?!\d)/g;
+  for (const m of text.matchAll(re)) {
+    const start = makeISO(fixYear(Number(m[3])), Number(m[2]), Number(m[1]));
+    const end = makeISO(fixYear(Number(m[6])), Number(m[5]), Number(m[4]));
+    if (!start || !end) continue;
+    const span = diffDays(start, end);
+    if (span >= 1 && span <= 62) out.push({ start, end });
+  }
+  return out;
+}
+
+/** The first date range stated in a plan's text. */
+export function detectRange(rawText: string): DateRange | null {
+  return detectRanges(rawText)[0] ?? null;
 }

@@ -1,4 +1,5 @@
 import type { SourceKind } from '../types';
+import type { Raster } from './color';
 
 /** A piece of text with its position on the page (any unit, consistent per page). */
 export interface Token {
@@ -24,6 +25,8 @@ export interface PlanDocument {
   pages: number;
   /** Year/month suggested by the source (e.g. Excel dates, file name). */
   hint?: { year?: number; month?: number };
+  /** Photo pixels (page 1), to read cell colors when the text is unreadable. */
+  raster?: Raster;
 }
 
 export interface Line {
@@ -94,9 +97,13 @@ export function normalizeWords(s: string): string {
   return stripAccents(s).toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
 }
 
-/** Uppercase code form used for matching: no spaces, no accents, trailing dots removed. */
+/** Cell borders and stains OCR glues to a code in photos (`|P1`, `GR]`, `{R+P1`). */
+const EDGE_NOISE = /^[|[\]{}()§¥"'`~_«»\\.,;:]+|[|[\]{}()§¥"'`~_«»\\.,;:]+$/g;
+
+/** Uppercase code form used for matching: no spaces, no accents, no border noise or trailing dots. */
 export function normalizeCode(s: string): string {
-  return stripAccents(s).toUpperCase().replace(/\s+/g, '').replace(/[.,;:]+$/, '').trim();
+  const compact = stripAccents(s).toUpperCase().replace(/\s+/g, '');
+  return compact.replace(EDGE_NOISE, '') || compact.replace(/[.,;:]+$/, '');
 }
 
 export function levenshtein(a: string, b: string): number {

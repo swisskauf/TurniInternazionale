@@ -248,6 +248,8 @@ export const it = {
     statusManual: 'Modificato a mano',
     statusUnknown: 'Codice sconosciuto',
     statusFuzzy: 'Da verificare',
+    byColor: 'dal colore',
+    fromPlanLegend: 'Letti dalla legenda del piano, senza usare xAI.',
     unknownCodes: (n: number) => `${n} ${plural(n, 'codice da definire', 'codici da definire')}`,
     unknownCodesHint: 'Definiscili ora: verranno riconosciuti automaticamente anche in futuro.',
     defineFromLegend: (n: number) => `Aggiungi ${n} ${plural(n, 'turno', 'turni')} dalla legenda`,

@@ -150,7 +150,7 @@ describe('pay', () => {
   });
 });
 
-import { parseLegendText } from './legend';
+import { legendFromTokens, parseLegendText, subtractBreaks } from './legend';
 describe('legend parser', () => {
   it('parses legend lines without AI', () => {
     const r = parseLegendText('P1 08:00-12:00 12:36-17:18\nN = Notte 22-6 (pausa 30 min)\nGR riposo\nF: Ferie');
@@ -158,5 +158,48 @@ describe('legend parser', () => {
     expect(r[1]).toMatchObject({ code: 'N', name: 'Notte', unpaidBreakMin: 30, segments: [{ start: '22:00', end: '06:00' }] });
     expect(r[2]).toMatchObject({ code: 'GR', kind: 'rest' });
     expect(r[3]).toMatchObject({ code: 'F', kind: 'vacation', name: 'Ferie' });
+  });
+});
+
+describe('legend with breaks', () => {
+  it('removes break windows from working hours', () => {
+    expect(subtractBreaks([{ start: '08:00', end: '17:18' }], [{ start: '12:00', end: '12:36' }])).toEqual([
+      { start: '08:00', end: '12:00' },
+      { start: '12:36', end: '17:18' },
+    ]);
+    expect(subtractBreaks([{ start: '22:00', end: '06:00' }], [{ start: '02:00', end: '02:30' }])).toEqual([
+      { start: '22:00', end: '02:00' },
+      { start: '02:30', end: '06:00' },
+    ]);
+  });
+
+  it('reads "Orario di lavoro … Pausa …" legends', () => {
+    const r = parseLegendText(
+      'P1 Piani 1 Orario di lavoro: 08:00-17:18 Pausa: 12:00-12:36\n' +
+        'R+P1 Ristorante + P1 Orario di lavoro: 05:00-08:00 Pausa: 07:30-08:00 Orario di lavoro: 08:00-15:12 Pausa: 12:00-12:30',
+    );
+    expect(r[0]).toMatchObject({ code: 'P1', name: 'Piani 1', kind: 'work', segments: [{ start: '08:00', end: '12:00' }, { start: '12:36', end: '17:18' }] });
+    expect(r[1].segments).toEqual([
+      { start: '05:00', end: '07:30' },
+      { start: '08:00', end: '12:00' },
+      { start: '12:30', end: '15:12' },
+    ]);
+  });
+
+  it('finds the legend of a rotated photo, skipping the table rows', () => {
+    const tilt = 0.03;
+    const tokens: { text: string; x: number; y: number; w: number; h: number; page: number }[] = [];
+    const line = (y: number, words: [string, number][]) => {
+      for (const [text, x] of words) tokens.push({ text, x, y: y + tilt * x, w: text.length * 8, h: 12, page: 1 });
+    };
+    line(100, [['Rossi', 20], ['P1', 200], ['GR', 260], ['P1', 320], ['MA', 380]]);
+    line(300, [['GR:', 20], ['Libero', 50]]);
+    line(325, [['MA:', 20], ['Malattia', 50]]);
+    line(360, [['Reparto', 20], ['P1', 120], ['Piani', 170], ['1', 215], ['Orario', 330], ['di', 385], ['lavoro:', 405], ['08:00-17:18', 465], ['Pausa:', 560], ['12:00-12:36', 615]]);
+    const r = legendFromTokens(tokens, ['P1', 'GR', 'MA']);
+    const by = Object.fromEntries(r.map((d) => [d.code, d]));
+    expect(by.GR).toMatchObject({ kind: 'rest', name: 'Libero' });
+    expect(by.MA).toMatchObject({ kind: 'sick' });
+    expect(by.P1.segments).toEqual([{ start: '08:00', end: '12:00' }, { start: '12:36', end: '17:18' }]);
   });
 });

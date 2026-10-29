@@ -1,7 +1,7 @@
 import { useMemo, useRef, useState } from 'react';
 import { motion } from 'motion/react';
 import {
-  AlertTriangle, Camera, CheckCircle2, ClipboardPaste, Cpu, FileSpreadsheet, FileText, Image as ImageIcon,
+  AlertTriangle, BookOpen, Camera, CheckCircle2, ClipboardPaste, Cpu, FileSpreadsheet, FileText, Image as ImageIcon,
   RotateCw, ScanText, ShieldCheck, Sparkles, Wand2, Wrench, X,
 } from 'lucide-react';
 import { Button, IconButton } from '@/components/ui/Button';
@@ -15,7 +15,8 @@ import { TypeEditor, blankType } from '@/features/types/TypeEditor';
 import { ScriptEditor } from '@/features/scripts/ScriptEditor';
 import { navigate, useRoute } from '@/app/router';
 import { AiError } from '@/ai/client';
-import { analyzePlanWithAi, compareDays, legendToTypes, refineScriptWithAi, type AnalyzePlanResult } from '@/ai/tasks';
+import { analyzePlanWithAi, compareDays, legendToTypes, refineScriptWithAi, type AiLegend, type AnalyzePlanResult } from '@/ai/tasks';
+import { legendFromTokens } from '@/engine/legend';
 import { readFile, readImage, readSheet, readText, sourceKindOf, type ReadStage } from '@/import/readers';
 import { extractKeywords, recognize, type RecognitionResult } from '@/engine/recognition/run';
 import { newScript, SYSTEM_SCRIPTS } from '@/engine/recognition/scripts';
@@ -84,6 +85,8 @@ export function ImportPage() {
   const [defining, setDefining] = useState<ShiftType | null>(null);
   const [scriptDraft, setScriptDraft] = useState<RecognitionScript | null>(null);
   const [legendPick, setLegendPick] = useState<Set<string>>(new Set());
+  /** Legend entries read from the plan itself (no xAI) for codes not defined yet. */
+  const [planLegend, setPlanLegend] = useState<AiLegend[]>([]);
   const [refining, setRefining] = useState(false);
   const [error, setError] = useState('');
   const inputs = { camera: useRef<HTMLInputElement>(null), image: useRef<HTMLInputElement>(null), pdf: useRef<HTMLInputElement>(null), sheet: useRef<HTMLInputElement>(null) };
@@ -95,20 +98,29 @@ export function ImportPage() {
     setProgress({ stage: 'recognize', value: 1 });
     const res = recognize(d, scriptsOverride ?? allScripts, { person: who, types: Object.values(useStore.getState().types), period: periodHint });
     const best = res[0];
-    const good = best && best.result.days.length >= 3 && best.result.quality >= 0.6;
+    // Codes the app doesn't know yet (first import of a plan) still mean the grid was read: the
+    // review then offers to define them from the plan's legend.
+    const read = best ? best.result.days.filter((x) => x.code && x.code !== '?').length / Math.max(1, best.result.days.length) : 0;
+    const good = best && best.result.days.length >= 3 && (best.result.quality >= 0.6 || (read >= 0.85 && !!best.result.personLabel));
     if (good) {
-      openReview({ script: best.script, result: best.result, viaAi: false });
+      openReview({ script: best.script, result: best.result, viaAi: false }, best.result.days, d);
     } else {
       setChosen(best ? { script: best.script, result: best.result, viaAi: false } : null);
       setPhase('nomatch');
     }
   };
 
-  const openReview = (c: Chosen, days = c.result.days) => {
+  const openReview = (c: Chosen, days = c.result.days, d = doc) => {
+    const known = (code: string) => Object.values(useStore.getState().types).some((x) => !x.archived && normalizeCode(x.code) === normalizeCode(code));
     setChosen(c);
-    setReview(relink(days.map((d) => ({ ...d, include: d.status !== 'empty' || !!d.kind })), useStore.getState().types));
+    setReview(relink(days.map((x) => ({ ...x, include: x.status !== 'empty' || !!x.kind })), useStore.getState().types));
     setSaveScript(c.viaAi ? c.script.createdBy === 'ai' : c.script.createdBy === 'system');
-    setLegendPick(new Set((c.ai?.legend ?? []).filter((l) => !Object.values(useStore.getState().types).some((x) => normalizeCode(x.code) === normalizeCode(l.code))).map((l) => l.code)));
+    // Codes the plan uses but the app doesn't know yet: look them up in the plan's own legend.
+    const unknown = [...new Set(days.filter((x) => x.status === 'unknown' && x.code !== '?').map((x) => normalizeCode(x.code)))];
+    const aiCodes = new Set((c.ai?.legend ?? []).map((l) => normalizeCode(l.code)));
+    const local = d ? legendFromTokens(d.tokens, unknown.filter((x) => !aiCodes.has(x))) : [];
+    setPlanLegend(local);
+    setLegendPick(new Set([...(c.ai?.legend ?? []), ...local].filter((l) => !known(l.code)).map((l) => l.code)));
     setPhase('review');
   };
 
@@ -243,7 +255,9 @@ export function ImportPage() {
     setError('');
   };
 
-  const newLegend = (chosen?.ai?.legend ?? []).filter((l) => !Object.values(types).some((x) => normalizeCode(x.code) === normalizeCode(l.code)));
+  const isKnown = (code: string) => Object.values(types).some((x) => !x.archived && normalizeCode(x.code) === normalizeCode(code));
+  const aiLegend = (chosen?.ai?.legend ?? []).filter((l) => !isKnown(l.code));
+  const newLegend = [...aiLegend, ...planLegend.filter((l) => !isKnown(l.code) && !aiLegend.some((a) => normalizeCode(a.code) === normalizeCode(l.code)))];
   // Codes the AI legend already explains are offered there, not listed twice.
   const legendCodes = new Set(newLegend.map((l) => normalizeCode(l.code)));
   const unknownCodes = [...new Set(review.filter((d) => d.include && d.status === 'unknown').map((d) => d.code))].filter((c) => !legendCodes.has(normalizeCode(c)));
@@ -468,7 +482,10 @@ export function ImportPage() {
 
             {newLegend.length > 0 && (
               <Card className="p-4 sm:p-5">
-                <div className="flex items-center gap-2 text-[15px] font-semibold text-ink"><Sparkles className="size-4.5 text-violet-500" /> {t.types.proposals}</div>
+                <div className="flex items-center gap-2 text-[15px] font-semibold text-ink">
+                  {aiLegend.length ? <Sparkles className="size-4.5 text-violet-500" /> : <BookOpen className="size-4.5 text-success" />} {t.types.proposals}
+                </div>
+                {!aiLegend.length && <p className="mt-1 text-[13px] text-muted">{t.import.fromPlanLegend}</p>}
                 <div className="mt-3 space-y-2">
                   {newLegend.map((l) => (
                     <label key={l.code} className="flex cursor-pointer items-center gap-3 rounded-xl bg-surface-2 px-3 py-2 ring-1 ring-line">
@@ -480,7 +497,8 @@ export function ImportPage() {
                   ))}
                 </div>
                 <Button className="mt-3" size="sm" variant="soft" disabled={!legendPick.size} onClick={() => {
-                  const created = legendToTypes(newLegend.filter((l) => legendPick.has(l.code)));
+                  const picked = (l: AiLegend) => legendPick.has(l.code);
+                  const created = [...legendToTypes(aiLegend.filter(picked)), ...legendToTypes(newLegend.filter((l) => picked(l) && !aiLegend.includes(l)), 'local')];
                   created.forEach(upsertType);
                   const map = { ...useStore.getState().types };
                   setReview((r) => relink(r, map));

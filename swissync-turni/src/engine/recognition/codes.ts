@@ -44,7 +44,13 @@ export function createCellInterpreter(opts: CodeMatcherOptions) {
   }
   const ignore = new Set(opts.ignore.map(normalizeCode).filter(Boolean));
 
-  const lookupExact = (k: string): ShiftType | undefined => exact.get(mapping.get(k) ?? k);
+  const lookupExact = (k: string): ShiftType | undefined => {
+    const hit = exact.get(mapping.get(k) ?? k);
+    if (hit) return hit;
+    // Plans mark changed/special days with a trailing sign ("R+P1*"): same shift type.
+    const unmarked = k.replace(/^[*°^]+|[*°^]+$/g, '');
+    return unmarked && unmarked !== k ? exact.get(mapping.get(unmarked) ?? unmarked) : undefined;
+  };
 
   const lookupFuzzy = (k: string): { type: ShiftType; confidence: number } | undefined => {
     const mapped = mapping.get(k) ?? k;

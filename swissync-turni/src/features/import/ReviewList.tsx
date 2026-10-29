@@ -1,4 +1,4 @@
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, Palette } from 'lucide-react';
 import { Badge } from '@/components/ui/Feedback';
 import { ShiftChip } from '@/components/ShiftChip';
 import type { RecognizedDay } from '@/engine/recognition/run';
@@ -38,11 +38,13 @@ export function ReviewList({ days, types, entries, onTap, onToggle }: {
         const st = reviewStatus(d, existing);
         const type = d.typeId ? types[d.typeId] : undefined;
         return (
-          <div key={d.date} className={cn('flex items-center gap-3 px-4 py-2.5', !d.include && 'opacity-45')}>
+          <div key={d.date} data-date={d.date} data-code={d.code} data-status={d.status} className={cn('flex items-center gap-3 px-4 py-2.5', !d.include && 'opacity-45')}>
             <input type="checkbox" checked={d.include} onChange={() => onToggle(d)} className="size-5 shrink-0 accent-[var(--brand)]" aria-label={d.date} />
             <button onClick={() => onTap(d)} className="flex min-w-0 flex-1 items-center gap-3 overflow-hidden text-left">
               <span className="w-[84px] shrink-0 text-[13.5px] font-semibold text-ink">{f.dateCap(d.date, 'EEE d MMM')}</span>
-              <span className="hidden w-24 shrink-0 truncate font-mono text-[12px] text-muted sm:block">{d.raw || '∅'}</span>
+              <span className="hidden w-24 shrink-0 truncate font-mono text-[12px] text-muted sm:block">
+                {d.byColor && !d.raw ? <span className="inline-flex items-center gap-1 font-sans"><Palette className="size-3.5" />{t.import.byColor}</span> : d.raw || '∅'}
+              </span>
               <ArrowRight className="hidden size-3.5 shrink-0 text-faint sm:block" />
               <ShiftChip code={d.code} type={type} kind={d.kind} unknown={d.status === 'unknown'} />
               <span className="min-w-0 flex-1 truncate text-[13px] text-muted">

@@ -250,6 +250,8 @@ export const en: Dict = {
     statusManual: 'Edited by hand',
     statusUnknown: 'Unknown code',
     statusFuzzy: 'Please check',
+    byColor: 'by color',
+    fromPlanLegend: 'Read from the plan’s legend, without using xAI.',
     unknownCodes: (n: number) => `${n} ${plural(n, 'code', 'codes')} to define`,
     unknownCodesHint: 'Define them now: they’ll be recognised automatically from now on.',
     defineFromLegend: (n: number) => `Add ${n} ${plural(n, 'shift', 'shifts')} from the legend`,
