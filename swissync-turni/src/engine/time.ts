@@ -119,7 +119,7 @@ export function fmtSegments(segments: Segment[]): string {
  * Used by the recognizer and the quick-entry parser.
  */
 export function extractTimeRanges(text: string): Segment[] {
-  const re = /(?<![\d:.])(\d{1,2}(?:[:.h]\d{2})?|\d{4})\s*(?:-|–|—|\/|à|a|bis|to|>)\s*(\d{1,2}(?:[:.h]\d{2})?|\d{4})(?![\d:.])/gi;
+  const re = /(?<![\w:.+])(\d{1,2}(?:[:.h]\d{2})?|\d{4})\s*(?:-|–|—|\/|à|a|bis|to|>)\s*(\d{1,2}(?:[:.h]\d{2})?|\d{4})(?![\d:.])/gi;
   const out: Segment[] = [];
   for (const m of text.matchAll(re)) {
     const a = parseHM(m[1]);

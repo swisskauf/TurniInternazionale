@@ -213,7 +213,8 @@ function fitHeader(marksIn: Omit<DateMark, 'idx'>[], anchor: Anchor, ref: ISODat
 const CODE_RE = /^\*?[A-Z0-9][A-Z0-9+*/-]{0,5}$/;
 /** Times written inside cells ("05:00 -", "08:00-12:00"): part of the table, not codes. */
 const TIME_RE = /^\d{1,2}[:.]\d{2}(?:-\d{1,2}[:.]\d{2})?-?$/;
-const isCellText = (t: Token) => CODE_RE.test(normalizeCode(t.text)) || TIME_RE.test(normalizeCode(t.text));
+const DASH_RE = /^[-–—]$/;
+const isCellText = (t: Token) => CODE_RE.test(normalizeCode(t.text)) || TIME_RE.test(normalizeCode(t.text)) || DASH_RE.test(t.text.trim());
 const WEEKDAY_RE = new RegExp(`^(?:${WEEKDAY_ABBR})\\.?$`, 'i');
 
 /**
@@ -307,6 +308,9 @@ function bodyTokens(tokens: Token[], head: Header): Token[] {
 
 function fitGeometry(head: Header, body: Token[]): Geometry | null {
   if (body.length < 3) return null;
+  // Codes start their cell; times and dashes inside a cell would only blur the fit.
+  const codes = body.filter((t) => CODE_RE.test(normalizeCode(t.text)));
+  const fitTokens = codes.length >= 3 ? codes : body;
   const { anchor, b } = head;
   const g: Geometry = { head, a: head.a, b, c: 0, s0: 0, s1: 0, o: 0, body, top: 0, bottom: 0, lo: head.lo, hi: head.hi, rms: 1 };
   // Initial shear: the value that best lines the cells' text up in columns.
@@ -314,12 +318,12 @@ function fitGeometry(head: Header, body: Token[]): Geometry | null {
   for (let s = -0.3; s <= 0.3001; s += 0.005) {
     let sc = 0;
     let ss = 0;
-    for (const t of body) {
+    for (const t of fitTokens) {
       const u = (tokenX(t, anchor) - s * dyOf(head, t) - head.a) / b;
       sc += Math.cos(2 * Math.PI * u);
       ss += Math.sin(2 * Math.PI * u);
     }
-    const R = Math.hypot(sc, ss) / body.length;
+    const R = Math.hypot(sc, ss) / fitTokens.length;
     if (R > bestR + 1e-6) {
       bestR = R;
       g.s0 = s;
@@ -339,7 +343,7 @@ function fitGeometry(head: Header, body: Token[]): Geometry | null {
       rows.push(feat(m.idx, 0, 0));
       ys.push(markX(m, anchor));
     }
-    for (const t of body) {
+    for (const t of fitTokens) {
       const dy = dyOf(head, t);
       const u = colIndex(g, tokenX(t, anchor), dy, true);
       const i = Math.round(u);
@@ -358,7 +362,7 @@ function fitGeometry(head: Header, body: Token[]): Geometry | null {
     stable++;
     if (head.range || g.hi - g.lo >= 62) continue;
     const aligned = (k: number) =>
-      body.filter((t) => {
+      fitTokens.filter((t) => {
         const u = colIndex(g, tokenX(t, anchor), dyOf(head, t), true);
         return Math.round(u) === k && Math.abs(u - k) < 0.3;
       }).length;
@@ -372,7 +376,7 @@ function fitGeometry(head: Header, body: Token[]): Geometry | null {
   }
   let sq = 0;
   let n = 0;
-  for (const t of body) {
+  for (const t of fitTokens) {
     const u = colIndex(g, tokenX(t, anchor), dyOf(head, t), true);
     const d = Math.min(0.5, Math.abs(u - Math.round(u)));
     sq += d * d;
@@ -509,10 +513,24 @@ export function readTable(input: TableInput): TableResult | null {
 
   // Text of one cell can span several lines (codes with times): stack it per column first.
   interface Stack { col: number; tokens: Token[]; x: number; y: number }
+  // Words written together ("05:00 - 08:00") belong to the cell where the phrase starts, even
+  // when the phrase reaches past the middle of the column.
   const perCol = new Map<number, Token[]>();
-  for (const t of g.body) {
-    const i = tokenColumn(g, t);
-    perCol.set(i, [...(perCol.get(i) ?? []), t]);
+  const byLine = [...g.body].sort((p, q) => cy(p) - cy(q) || p.x - q.x);
+  const placed = new Set<Token>();
+  for (const t of byLine) {
+    if (placed.has(t)) continue;
+    const col = tokenColumn(g, t);
+    const run = [t];
+    placed.add(t);
+    for (let last = t; ; ) {
+      const next = byLine.find((o) => !placed.has(o) && Math.abs(cy(o) - cy(last)) < 0.5 * th && o.x >= last.x + last.w - 0.2 * th && o.x - (last.x + last.w) < 0.6 * th);
+      if (!next) break;
+      run.push(next);
+      placed.add(next);
+      last = next;
+    }
+    perCol.set(col, [...(perCol.get(col) ?? []), ...run]);
   }
   const stacks: Stack[] = [];
   for (const [col, list] of perCol) {
@@ -570,14 +588,8 @@ export function readTable(input: TableInput): TableResult | null {
     });
   }
 
-  // A header that lost its first/last dates to OCR: extend over columns that hold cells.
-  let { lo, hi } = g;
-  if (!cols.range) {
-    const busyRows = new Set(owner.filter((o) => o >= 0)).size;
-    const filled = (i: number) => stacks.filter((st, n) => st.col === i && owner[n] >= 0).length >= Math.max(3, 0.25 * busyRows);
-    while (hi - lo < 62 && filled(hi + 1)) hi++;
-    while (hi - lo < 62 && filled(lo - 1)) lo--;
-  }
+  // Columns whose dates OCR missed were already added by the geometry fit (aligned cells).
+  const { lo, hi } = g;
 
   const rowY = (x: number) => lineY(lines[targetIdx], x);
   const sampleAt = (i: number, y: number) => {

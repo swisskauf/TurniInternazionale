@@ -1,6 +1,50 @@
-import { extractTimeRanges } from '../time';
+import { extractTimeRanges, fmtHM, parseHM } from '../time';
 import type { CodeMapping, DayKind, Segment, ShiftType } from '../types';
 import { confusableForm, levenshtein, normalizeCode } from './tokens';
+
+const mins = (hm: string) => parseHM(hm) ?? 0;
+const totalMinutes = (list: Segment[]) => list.reduce((sum, x) => sum + ((mins(x.end) - mins(x.start) + 1440) % 1440 || 1440), 0);
+
+/**
+ * Time ranges written in a cell. OCR sometimes loses the dash of a range ("05:00 08:00
+ * 08:00 - 12:00"): an even list of times is then read as consecutive pairs.
+ */
+export function cellTimes(text: string): Segment[] {
+  const ranges = extractTimeRanges(text);
+  const all = [...text.matchAll(/(?<![\d:.])(\d{1,2}[:.]\d{2})(?![\d:.])/g)].map((m) => parseHM(m[1]));
+  if (all.length < 2 || all.length % 2 || ranges.length * 2 >= all.length || all.some((v) => v == null)) return ranges;
+  const pairs: Segment[] = [];
+  for (let i = 0; i < all.length; i += 2) {
+    if (all[i] === all[i + 1]) return ranges;
+    pairs.push({ start: fmtHM(all[i]!), end: fmtHM(all[i + 1]!) });
+  }
+  return pairs;
+}
+
+/**
+ * Times written in a cell replace the shift's hours, but keep the shift's own breaks when the
+ * written times only join the pieces around them: R+P1 = 05:00-07:30, 08:00-12:00 … written as
+ * "05:00-08:00 08:00-12:00" still has its 07:30-08:00 break.
+ */
+export function keepTypeBreaks(times: Segment[], type: Segment[]): Segment[] {
+  const bounds = new Set(type.flatMap((s) => [mins(s.start), mins(s.end)]));
+  const breaks = type.slice(1).map((s, i) => ({ start: mins(type[i].end), end: mins(s.start) })).filter((b) => b.end > b.start);
+  return times.flatMap((t) => {
+    const a = mins(t.start);
+    const z = mins(t.end);
+    if (z <= a || !bounds.has(a) || !bounds.has(z)) return [t];
+    const inside = breaks.filter((b) => b.start > a && b.end <= z);
+    if (!inside.length) return [t];
+    const out: Segment[] = [];
+    let cur = a;
+    for (const b of inside) {
+      if (b.start > cur) out.push({ start: fmtHM(cur), end: fmtHM(b.start) });
+      cur = b.end;
+    }
+    if (z > cur) out.push({ start: fmtHM(cur), end: fmtHM(z) });
+    return out;
+  });
+}
 
 export type CellStatus = 'ok' | 'fuzzy' | 'unknown' | 'times' | 'empty';
 
@@ -82,11 +126,20 @@ export function createCellInterpreter(opts: CodeMatcherOptions) {
     }
 
     const whole = normalizeCode(text);
-    const times = extractTimeRanges(text);
+    const times = cellTimes(text);
 
     const withTimes = (type: ShiftType, status: CellStatus, confidence: number): CellResult => {
-      const differs = times.length > 0 && JSON.stringify(times) !== JSON.stringify(type.segments);
-      return { raw, code: type.code, typeId: type.id, segments: differs ? times : undefined, status, confidence };
+      const own = times.length ? keepTypeBreaks(times, type.segments) : times;
+      const differs = own.length > 0 && JSON.stringify(own) !== JSON.stringify(type.segments);
+      if (!differs) return { raw, code: type.code, typeId: type.id, status, confidence };
+      // Written hours replace the shift's only when they look like a whole shift: OCR often reads
+      // just one line of a two-line cell, or swaps two times.
+      const planned = totalMinutes(type.segments);
+      const written = totalMinutes(own);
+      const overnight = (list: Segment[]) => list.some((x) => mins(x.end) <= mins(x.start));
+      const plausible = !planned || (written >= 0.5 * planned && written <= 1.5 * planned && (overnight(type.segments) || !overnight(own)));
+      if (plausible) return { raw, code: type.code, typeId: type.id, segments: own, status, confidence };
+      return { raw, code: type.code, typeId: type.id, status: 'fuzzy', confidence: Math.min(confidence, 0.6) };
     };
 
     let t = lookupExact(whole);

@@ -173,5 +173,25 @@ describe('photographed table reader', () => {
       { start: '05:00', end: '08:00' },
       { start: '08:00', end: '12:00' },
     ]);
+    // With the legend's hours, the shift's own break inside the written times is kept.
+    const rp1 = { ...mk('R+P1'), segments: [{ start: '05:00', end: '07:30' }, { start: '08:00', end: '12:00' }, { start: '12:30', end: '15:12' }] };
+    const p1 = { ...mk('P1'), segments: [{ start: '08:00', end: '12:00' }, { start: '12:36', end: '17:18' }] };
+    const legendTypes = createCellInterpreter({ types: [rp1, p1], codeMap: [], ignore: [], emptyMeans: 'skip' });
+    expect(legendTypes('*R+P1 05:00 - 08:00 08:00 - 12:00').segments).toEqual([
+      { start: '05:00', end: '07:30' },
+      { start: '08:00', end: '12:00' },
+    ]);
+    // A shorter day written by hand is taken as written…
+    expect(legendTypes('P1 08:00-13:00').segments).toEqual([{ start: '08:00', end: '13:00' }]);
+    // …but one line of a two-line cell (or swapped times) is not a whole shift: keep the
+    // shift's hours and ask to check.
+    for (const [text, typeId] of [['R+P1 05:00 - 08:00', 'R+P1'], ['P1 17:18 08:00', 'P1']]) {
+      const r = legendTypes(text);
+      expect(r).toMatchObject({ typeId, status: 'fuzzy' });
+      expect(r.segments).toBeUndefined();
+    }
+    // The usual hours written out are just the shift itself.
+    expect(legendTypes('P1 08:00-17:18')).toMatchObject({ typeId: 'P1', status: 'ok' });
+    expect(legendTypes('P1 08:00-17:18').segments).toBeUndefined();
   });
 });

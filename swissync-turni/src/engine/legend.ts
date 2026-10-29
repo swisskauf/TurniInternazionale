@@ -87,7 +87,7 @@ export function describeLegend(code: string, text: string): LegendDraft | null {
     .replace(/\(.*?\)/g, ' ')
     .replace(/(\d{1,2}(?:[:.h]\d{2})?)\s*(?:-|–|—|\/|a|bis|to)\s*(\d{1,2}(?:[:.h]\d{2})?)/gi, ' ')
     .replace(LABELS, ' ')
-    .replace(/\s[,+/:;]\s|\s[,/:;]$|^[,/:;]\s*|\be\b|\bund\b|\bet\b|\band\b/gi, ' ')
+    .replace(/\s[,/:;]\s|\s[,/:;]$|^[,/:;]\s*|\be\b|\bund\b|\bet\b|\band\b/gi, ' ')
     .replace(/\s+/g, ' ')
     .trim();
   if (!segments.length && kind === 'other' && !name) return null;
